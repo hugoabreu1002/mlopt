@@ -63,12 +63,12 @@ class ACO(object):
 
         for r in range(rows):
             for di, dobjtec in enumerate(self._dimentionsRanges):
-                if (r > len(dobjtec)):
+                print(r, di, dobjtec, len(dobjtec))
+                if (r >= len(dobjtec)):
                     Space[r, di] = dobjtec[r%len(dobjtec)]
                 else:
                     Space[r, di] = dobjtec[r]
 
-        
         return Space    
     
     
@@ -95,7 +95,6 @@ class ACO(object):
             i = self._antsVertice[k_ant]
             j = np.random.choice(list(range(self._Space.shape[0])))
 
-            print("Dij indexes i, j : ",(i,j))
             if Dij[i,j] == np.inf:
                 Ci = self.fitnessFunction(self._Space[self._antsVertice[k_ant], :], self._fitnessFunctionArgs)
                 Cj = self.fitnessFunction(self._Space[j, :], self._fitnessFunctionArgs)
@@ -131,25 +130,25 @@ class ACO(object):
         return Pij
 
                                           
-    def updateAntsPosition(self, Ants, Pij):
+    def updateAntsPosition(self, Ants, Pij, verbose=False):
         last_Ants = Ants.copy()
 
         for i in range(Ants.shape[0]):
             k = Ants[i]
-            print("Ant {} vertice {}:".format(i, k))
-            print(np.argwhere(Pij[k,:] > 0))
-            possible_move = np.argwhere(Pij[k,:] > 0).flatten()
-            print("Ant {} possibilities:".format(i))
-            print(possible_move)
 
+            possible_move = np.argwhere(Pij[k,:] > 0).flatten()
             weights = Pij[k,possible_move]/Pij[k,possible_move].sum()
             Ants[i] = np.random.choice(possible_move, p=weights)
-            print("Ant {} move from {} to {}".format(i, k, Ants[i]))
+
+            if verbose:
+                print("Ant {} possibilities:".format(i))
+                print(possible_move)
+                print("Ant {} move from {} to {}".format(i, k, Ants[i]))
 
         return Ants, last_Ants
     
                                           
-    def search(self):
+    def search(self, verbose=False):
         
         self.initializeMatricesAndAntsPosition()
         
@@ -157,23 +156,19 @@ class ACO(object):
         self.oldAntsVertice = np.zeros(self._antNumber)
                 
         for it in tqdm(range(self._antNumber)):
-            print("iteration {0}".format(it))
-
             self._Dij = self.updateDij(self._Dij)
-            print("Dij: ")
-            print(self._Dij)
-
             self._Tij = self.updateTij(self._Tij, self._Dij, self._antsVertice, self._oldAntsVertice, self._rho, self._Q)
-            print("Tij: ")
-            print(self._Tij)
-
             self._Pij = self.updatePij(self._Pij, self._Tij, self._Dij)
-            print("Pij:")
-            print(self._Pij)
-
-            self._antsVertice, self._oldAntsVertice = self.updateAntsPosition(self._antsVertice, self._Pij)
-            print("Ants now - then")
-            print(self._antsVertice, self._oldAntsVertice)
+            self._antsVertice, self._oldAntsVertice = self.updateAntsPosition(self._antsVertice, self._Pij, verbose)
+            if verbose:
+                print("Dij: ")
+                print(self._Dij)
+                print("Tij: ")
+                print(self._Tij)
+                print("Pij:")
+                print(self._Pij)
+                print("Ants now - then")
+                print(self._antsVertice, self._oldAntsVertice)
 
         print("Most Frequent Response")
         print(self._Space[mode(self._antsVertice)[0][0],:])
