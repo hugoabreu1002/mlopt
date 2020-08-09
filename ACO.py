@@ -63,7 +63,6 @@ class ACO(object):
 
         for r in range(rows):
             for di, dobjtec in enumerate(self._dimentionsRanges):
-                print(r, di, dobjtec, len(dobjtec))
                 if (r >= len(dobjtec)):
                     Space[r, di] = dobjtec[r%len(dobjtec)]
                 else:
@@ -74,7 +73,7 @@ class ACO(object):
     
     def initializeMatricesAndAntsPosition(self):    
         self._Space = self.setSpace()
-        self._Dij = 1/np.zeros((self._Space.shape[0], self._Space.shape[0]))
+        self._Dij = 1/np.zeros((self._Space.shape[0], self._Space.shape[0])) #np.ones((self._Space.shape[0], self._Space.shape[0]))#
         self._Pif = np.ones((self._Space.shape[0], self._Space.shape[0]))
         self._Tij = np.ones((self._Space.shape[0], self._Space.shape[0]))
         
@@ -95,7 +94,7 @@ class ACO(object):
             i = self._antsVertice[k_ant]
             j = np.random.choice(list(range(self._Space.shape[0])))
 
-            if Dij[i,j] == np.inf:
+            if Dij[i,j] == np.inf: #np.inf
                 Ci = self.fitnessFunction(self._Space[self._antsVertice[k_ant], :], self._fitnessFunctionArgs)
                 Cj = self.fitnessFunction(self._Space[j, :], self._fitnessFunctionArgs)
                 Dij[i,j] = np.exp((Cj-Ci)/Ci)
@@ -105,11 +104,14 @@ class ACO(object):
     
                                           
     def updateTij(self, Tij, Dij, Ants, last_Ants, rho=0.5, Q=1):
+        Dij_inf = Dij == np.inf
+        Dij_notinf = Dij != np.inf
+        Dij[Dij_inf] = Dij_notinf.max()
+
         sumdeltaTij = np.zeros(Tij.shape)
 
         for kij in zip(last_Ants, Ants):
             sumdeltaTij[kij] += Q/Dij[kij]
-            print(kij, sumdeltaTij[kij])
 
         Tij = (1-rho)*Tij + sumdeltaTij
 
@@ -119,7 +121,9 @@ class ACO(object):
 
                                           
     def updatePij(self, Pij, Tij, Dij, alpha=1, beta=1):
-        #Dij_inf = Dij == np.inf
+        Dij_inf = Dij == np.inf
+        Dij_notinf = Dij != np.inf
+        Dij[Dij_inf] = Dij_notinf.max()
 
         Pij = (Tij**alpha)/(Dij**beta)
         Pij += np.random.randint(1, size=Pij.shape)/10
@@ -151,14 +155,24 @@ class ACO(object):
     def search(self, verbose=False):
         
         self.initializeMatricesAndAntsPosition()
-        
         self.antsVertice = np.zeros(self._antNumber)
         self.oldAntsVertice = np.zeros(self._antNumber)
                 
         for it in tqdm(range(self._antNumber)):
             self._Dij = self.updateDij(self._Dij)
+            if verbose:
+                print("Dij: ")
+                print(self._Dij)
+
             self._Tij = self.updateTij(self._Tij, self._Dij, self._antsVertice, self._oldAntsVertice, self._rho, self._Q)
+            if verbose:
+                print("Tij: ")
+                print(self._Tij)
+
             self._Pij = self.updatePij(self._Pij, self._Tij, self._Dij)
+            if verbose:
+                print("Pij:")
+                print(self._Pij)
             self._antsVertice, self._oldAntsVertice = self.updateAntsPosition(self._antsVertice, self._Pij, verbose)
             if verbose:
                 print("Dij: ")
