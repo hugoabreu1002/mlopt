@@ -1,9 +1,9 @@
 import numpy as np
+from tqdm import tqdm
+from scipy.stats import mode
 
 class ACO(object):
-    
-    def __init__(self, antNumber, alpha, beta, rho, Q, dimentionsRanges, fitnessFunction, fitnessFunctionArgs):
-        """
+    """
         antNumber : number of ants
         
         alpha : parameter for probabilities matrix
@@ -14,27 +14,33 @@ class ACO(object):
         
         Q : for pherormone
         
-        dimentionsRanges : must be a list of iretables
+        dimentionsRanges : must be a list of itretables
     
         fitenessFunction : must be like, and returns a float from 0 to inf, the smaller means the better
             result = fitenessFunction(self.Space(self.antsVertice[k_ant]), *fitnessFunctionArgs)
             
         fitnessFunctionArgs : args Diferent than the antsVertice in Space.    
-        """
-        self.alpha = alpha
-        self.beta = beta
-        self.dimentionsRanges = dimentionsRanges
-        self.rho = rho
-        self.Q = Q
-        self.antNumber = antNumber
-        self.Dij = None
-        self.Pij = None
-        self.Tij = None
-        self.Space = None
-        self.antsVertice = None
-        self.oldAntsVertice = None
+    """
+
+    fitnessFunctionArgs = None
+
+    def __init__(self, antNumber, alpha, beta, rho, Q, dimentionsRanges, fitnessFunction, fitnessFunctionArgs=None):
+        self._alpha = alpha
+        self._beta = beta
+        self._dimentionsRanges = dimentionsRanges
+        self._rho = rho
+        self._Q = Q
+        self._antNumber = antNumber
+        self._Dij = None
+        self._Pij = None
+        self._Tij = None
+        self._Space = None
+        self._antsVertice = None
+        self._oldAntsVertice = None
         self.fitnessFunction = fitnessFunction
-        self.fitnessFunctionArgs = fitnessFunctionArgs
+        if fitnessFunctionArgs is None:
+            fitnessFunctionArgs = []
+        self._fitnessFunctionArgs = fitnessFunctionArgs
     
     
     def setSpace(self):
@@ -47,13 +53,16 @@ class ACO(object):
         """
                 
         rows = 1
-        for d in self.dimentionsRanges:
+        for d in self._dimentionsRanges:
             rows = len(d)*rows
 
-        Space = np.zeros(rows, len(self.dimentionsRanges))
+        print("dimentions Ranges passed: ", self._dimentionsRanges)
+        print("number o Space rows: ", rows)
+        
+        Space = np.zeros((rows, len(self._dimentionsRanges)))
 
-        for r in rows:
-            for di, dobjtec in enumerate(self.dimentionsRanges):
+        for r in range(rows):
+            for di, dobjtec in enumerate(self._dimentionsRanges):
                 if (r > len(dobjtec)):
                     Space[r, di] = dobjtec[r%len(dobjtec)]
                 else:
@@ -63,11 +72,14 @@ class ACO(object):
         return Space    
     
     
-    def initializeMatrices(self):    
-        self.Space = self.setSpace()
-        self.Dij = np.zeros((self.Space.shape[0], self.Space.shape[0]))
-        self.Pif = np.zeros((self.Space.shape[0], self.Space.shape[0]))
-        self.Tij = np.zeros((self.Space.shape[0], self.Space.shape[0]))
+    def initializeMatricesAndAntsPosition(self):    
+        self._Space = self.setSpace()
+        self._Dij = 1/np.zeros((self._Space.shape[0], self._Space.shape[0]))
+        self._Pif = np.ones((self._Space.shape[0], self._Space.shape[0]))
+        self._Tij = np.ones((self._Space.shape[0], self._Space.shape[0]))
+        
+        self._antsVertice = np.random.choice(list(range(self._Space.shape[0])), size=self._antNumber)
+        self._oldAntsVertice = np.zeros(self._antNumber, dtype=int)
     
     
     def updateDij(self, Dij):
@@ -79,45 +91,43 @@ class ACO(object):
         Dij = Exp((Cj-Ci)/Ci)
         """
         
-        for k_ant in range(self.antNumber):
-            i = self.antsVertice[k_ant]
-            j = np.random.choice(self.Space.shape[0])
-            
+        for k_ant in range(self._antNumber):
+            i = self._antsVertice[k_ant]
+            j = np.random.choice(list(range(self._Space.shape[0])))
+
+            print("Dij indexes i, j : ",(i,j))
             if Dij[i,j] == np.inf:
-                Ci = self.fitnessFunction(self.Space(self.antsVertice[k_ant]), self.fitnessFunctionArgs)
-                Cj = self.fitnessFunction(self.Space(j, self.fitnessFunctionArgs))
+                Ci = self.fitnessFunction(self._Space[self._antsVertice[k_ant], :], self._fitnessFunctionArgs)
+                Cj = self.fitnessFunction(self._Space[j, :], self._fitnessFunctionArgs)
                 Dij[i,j] = np.exp((Cj-Ci)/Ci)
+                Dij[j,i] = Dij[i,j]
         
         return Dij
     
                                           
     def updateTij(self, Tij, Dij, Ants, last_Ants, rho=0.5, Q=1):
-    
-        Dij_inf = Dij == np.inf
-
         sumdeltaTij = np.zeros(Tij.shape)
 
         for kij in zip(last_Ants, Ants):
             sumdeltaTij[kij] += Q/Dij[kij]
+            print(kij, sumdeltaTij[kij])
 
         Tij = (1-rho)*Tij + sumdeltaTij
 
-        Tij[Dij_inf] = 0
+        Tij += np.random.randint(1, size=Tij.shape)/10
 
         return Tij
 
                                           
     def updatePij(self, Pij, Tij, Dij, alpha=1, beta=1):
-        Dij_inf = Dij == np.inf
+        #Dij_inf = Dij == np.inf
 
         Pij = (Tij**alpha)/(Dij**beta)
-        Pij[Dij_inf] = 0
-
+        Pij += np.random.randint(1, size=Pij.shape)/10
+        
         row_sums = Pij.sum(axis=1)
         Pij = Pij / row_sums[:, np.newaxis]
-
-        Pij[Dij_inf] = 0 #lidar com ficar na mesma cidade
-
+        
         return Pij
 
                                           
@@ -126,15 +136,14 @@ class ACO(object):
 
         for i in range(Ants.shape[0]):
             k = Ants[i]
-
+            print("Ant {} vertice {}:".format(i, k))
+            print(np.argwhere(Pij[k,:] > 0))
             possible_move = np.argwhere(Pij[k,:] > 0).flatten()
-            weights = Pij[k,possible_move]/Pij[k,possible_move].sum()
-
             print("Ant {} possibilities:".format(i))
             print(possible_move)
 
+            weights = Pij[k,possible_move]/Pij[k,possible_move].sum()
             Ants[i] = np.random.choice(possible_move, p=weights)
-
             print("Ant {} move from {} to {}".format(i, k, Ants[i]))
 
         return Ants, last_Ants
@@ -142,29 +151,31 @@ class ACO(object):
                                           
     def search(self):
         
-        self.initializeMatrices()
+        self.initializeMatricesAndAntsPosition()
         
-        self.antsVertice = np.zeros(self.antNumber)
-        self.oldAntsVertice = np.zeros(self.antNumber)
-        
-        it = 0
-        while(it<self.antNumber):
+        self.antsVertice = np.zeros(self._antNumber)
+        self.oldAntsVertice = np.zeros(self._antNumber)
+                
+        for it in tqdm(range(self._antNumber)):
             print("iteration {0}".format(it))
 
-            self.Dij = self.updateDij(self.Dij)
+            self._Dij = self.updateDij(self._Dij)
             print("Dij: ")
-            print(self.Dij)
+            print(self._Dij)
 
-            self.Tij = self.updateTij(self.Tij, self.Dij, self.antsVertice, self.oldAntsVertice, self.rho, self.Q)
+            self._Tij = self.updateTij(self._Tij, self._Dij, self._antsVertice, self._oldAntsVertice, self._rho, self._Q)
             print("Tij: ")
-            print(self.Tij)
+            print(self._Tij)
 
-            Pij = self.updatePij(self.Pij, self.Tij, self.Dij)
+            self._Pij = self.updatePij(self._Pij, self._Tij, self._Dij)
             print("Pij:")
-            print(Pij)
+            print(self._Pij)
 
-            self.antsVertice, self.oldAntsVertice = self.updateAntsPosition(self.antsVertice, self.Pij)
+            self._antsVertice, self._oldAntsVertice = self.updateAntsPosition(self._antsVertice, self._Pij)
             print("Ants now - then")
-            print(self.antsVertice, self.oldAntsVertice)
+            print(self._antsVertice, self._oldAntsVertice)
 
-            it+=1
+        print("Most Frequent Response")
+        print(self._Space[mode(self._antsVertice)[0][0],:])
+        print("Minimun Found")
+        print(self.fitnessFunction(self._Space[mode(self._antsVertice)[0][0],:], self._fitnessFunctionArgs))
