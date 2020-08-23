@@ -24,26 +24,26 @@ class ACO(object):
 
     fitnessFunctionArgs = None
 
-    def __init__(self, antNumber, antTours, alpha, beta, rho, Q, dimentionsRanges, fitnessFunction, fitnessFunctionArgs=[]):
+    def __init__(self, alpha, beta, rho, Q):
         self._alpha = alpha
         self._beta = beta
-        self._dimentionsRanges = dimentionsRanges
         self._rho = rho
         self._Q = Q
-        self._antNumber = antNumber
-        self._antTours = antTours
         self._Dij = None
         self._Pij = None
         self._Tij = None
         self._Space = None
         self._antsVertice = None
         self._oldAntsVertice = None
-        self.fitnessFunction = fitnessFunction
-        self._fitnessFunctionArgs = fitnessFunctionArgs
+        self._verticesFitness = None
         self._allBest = None
         self._allBestFitness = np.inf
         self._ants_History = None
-    
+        self._antNumber = None
+        self._antTours = None
+        self._dimentionsRanges = None
+        self.fitnessFunction = None
+        self._fitnessFunctionArgs = None
     
     def setSpace(self):
         """
@@ -72,9 +72,12 @@ class ACO(object):
 
         return Space    
     
+    def initializeVerticesFitness(self):
+        return 1/np.zeros(self._Space.shape[0])
     
     def initializeMatricesAndAntsPosition(self):    
         self._Space = self.setSpace()
+        self._verticesFitness = self.initializeVerticesFitness()
         self._Dij = 1/np.zeros((self._Space.shape[0], self._Space.shape[0])) #np.ones((self._Space.shape[0], self._Space.shape[0]))#
         self._Pif = np.ones((self._Space.shape[0], self._Space.shape[0]))
         self._Tij = np.ones((self._Space.shape[0], self._Space.shape[0]))
@@ -83,7 +86,7 @@ class ACO(object):
         self._oldAntsVertice = np.zeros(self._antNumber, dtype=int)
         self._ants_History = [None]*self._antTours
     
-    def updateDij(self, Dij):
+    def updateDij(self, Dij, verbose=False):
         """
         Dij and Pij will be only the matrix for the current possibilities
         Tij will be the pherormonen matrix for the whole graph
@@ -96,18 +99,36 @@ class ACO(object):
         """
         
         for k_ant in range(self._antNumber):
-            i = self._antsVertice[k_ant]
-            for foo in range(self._antNumber):
-                j = np.random.choice(range(self._Space.shape[0]))
-                if Dij[i, j] == np.inf: #np.inf
-                    Ci = self.fitnessFunction(self._Space[self._antsVertice[k_ant], :], self._fitnessFunctionArgs)
-                    Cj = self.fitnessFunction(self._Space[j, :], self._fitnessFunctionArgs)
+            i_index = self._antsVertice[k_ant]
+            for foo in tqdm(range(self._antNumber)):
+                j_index = np.random.choice(range(self._Space.shape[0]))
+                if Dij[i_index, j_index] == np.inf: #np.inf
+
+                    if verbose:
+                        print("Setting fitness for")
+                        print(self._Space[i_index, :])
+
+                    Ci = self.fitnessFunction(self._Space[i_index, :], self._fitnessFunctionArgs)
+                    self._verticesFitness[i_index] = Ci
+
+                    if verbose:
+                        print("fitness is")
+                        print(Ci)
+                        print("Setting fitness for")
+                        print(self._Space[j_index, :])
                     
+                    Cj = self.fitnessFunction(self._Space[j_index, :], self._fitnessFunctionArgs)
+                    self._verticesFitness[j_index] = Cj
+
+                    if verbose:
+                        print("fitness is")
+                        print(Cj)
+
                     Dij_ij = np.exp((Cj-Ci)/Ci)
-                    Dij[i,j] = Dij_ij + Dij_ij*np.random.rand(1)/10
+                    Dij[i_index, j_index] = Dij_ij + Dij_ij*np.random.rand(1)/10
         
                     Dij_ji = np.exp((Ci-Cj)/Cj)
-                    Dij[j,i] = Dij_ji + Dij_ji*np.random.rand(1)/10
+                    Dij[j_index, i_index] = Dij_ji + Dij_ji*np.random.rand(1)/10
         
         return Dij
     
@@ -173,14 +194,26 @@ class ACO(object):
         return Ants, last_Ants
     
                                           
-    def search(self, verbose=False):
-        
+    def optimize(self, antNumber, antTours, dimentionsRanges, function, functionArgs=[], verbose=False):
+        """
+        antNumber : Number of ants
+        antTours : Number of tours each ant will make on the graph
+        dimentionsRanges : Dimentions of the Graph
+        function : function to be optimized
+        functionArgs : *args of the function
+        """
+        self._antNumber = antNumber
+        self._antTours = antTours
+        self._dimentionsRanges = dimentionsRanges
+        self.fitnessFunction = function
+        self._fitnessFunctionArgs = functionArgs
+
         self.initializeMatricesAndAntsPosition()
         self._antsVertice = np.zeros(self._antNumber, dtype=int)
         self._oldAntsVertice = np.zeros(self._antNumber, dtype=int)
         
         for it in tqdm(range(self._antTours)):
-            self._Dij = self.updateDij(self._Dij)
+            self._Dij = self.updateDij(self._Dij, verbose)
             if verbose:
                 print("Dij: ")
                 print(self._Dij)
@@ -196,14 +229,7 @@ class ACO(object):
                 print(self._Pij)
             
             self._antsVertice, self._oldAntsVertice = self.updateAntsPosition(self._antsVertice.copy(), self._Pij, verbose)
-            print(self._antsVertice)
             self._ants_History[it] = self._antsVertice.copy()
-            
-            tour_best = self._Space[mode(self._antsVertice)[0][0],:]
-            tour_best_fitness = self.fitnessFunction(tour_best, self._fitnessFunctionArgs)
-            if tour_best_fitness < self._allBestFitness:
-                self._allBestFitness = tour_best_fitness
-                self._allBest = tour_best
 
             if verbose:
                 print("Dij: ")
@@ -215,14 +241,13 @@ class ACO(object):
                 print("Ants now - then")
                 print(self._antsVertice, "-", self._oldAntsVertice)
 
-        print("Most Frequent Last Tour Response")
-        print(tour_best)
-        print("Most Frequent Last Tour Fitness")
-        print(tour_best_fitness)
-
+        self._allBest = self._Space[np.argmin(self._verticesFitness)]
+        self._allBestFitness = self._verticesFitness.min()
         print("All Best Response")
         print(self._allBest)
         print("All Best Response Fitness")
         print(self._allBestFitness)
 
         self._ants_History = list(filter(lambda x: not x is None, self._ants_History))
+
+        return self._allBest, self._allBestFitness
