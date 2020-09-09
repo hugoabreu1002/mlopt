@@ -23,7 +23,7 @@ class AGMLP_VR_Residual(AGMLP_Residual):
             Ag_mlp_erro = Ag_mlp(erro_train_entrada, erro_train_saida, erro_test_entrada, erro_test_saida, self._num_epochs,
                                     self._size_pop, self._prob_mut).search_best_individual()
 
-            percent_VR_heuristic = population[i][0:5]/2
+            percent_VR_heuristic = sum(population[i][0:5])/2
             if percent_VR_heuristic > 50:
                 percent_VR_heuristic = 50
 

@@ -4,7 +4,7 @@ import random
 from tqdm import tqdm
 from hibridmodels import EnsembleSearch
 
-class AGEnsembleResidual:
+class AGEnsemble_Residual:
     
     def __init__(self, data, y_sarimax, num_epochs = 10, size_pop=10, prob_mut=0.5, tr_ts_percents=[80,20]):
         
