@@ -4,6 +4,7 @@ from sklearn import preprocessing
 import numpy as np
 import random
 from tqdm import tqdm
+from sklearn.ensemble import VotingRegressor
 
 class AgMlp:
 
@@ -17,6 +18,7 @@ class AgMlp:
         self._prob_mut = prob_mut
         self._fitness_array = np.array([])
         self._best_of_all = None
+        self._final_trained_mlps = None
     
     def gen_population(self):
         sizepop=self._size_population
@@ -100,5 +102,22 @@ class AgMlp:
                 
             if self.early_stop():
                 break
-                
+
+        self._final_trained_mlps = population[:][-2]
+
         return self
+
+    # TODO testar
+    def return_VotingRegressor(self, percent):
+        """
+            returns fited voting regressor objetc of bests N mlps trained
+        """
+
+        Number = int(len(self._final_trained_mlps) * percent/100)
+
+        n_mlps = self._final_trained_mlps[:Number]
+        voting_object = [('mlp'+str(n), mlp) for n,mlp in enumerate(n_mlps)]
+        VR = VotingRegressor(voting_object)
+        VR.fit(self._X_train, self._y_train)
+
+        return VR

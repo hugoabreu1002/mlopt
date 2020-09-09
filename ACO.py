@@ -101,7 +101,7 @@ class ACO(object):
         for k_ant in range(self._antNumber):
             i_index = self._antsVertice[k_ant]
             for foo in tqdm(range(self._antNumber)):
-                j_index = np.random.choice(range(self._Space.shape[0]))
+                j_index = np.random.choice(range(0, self._Space.shape[0]))
                 if Dij[i_index, j_index] == np.inf: #np.inf
 
                     if verbose:

@@ -8,7 +8,7 @@ import numpy as np
 import random
 from tqdm import tqdm
 
-class AGMLPResidual:
+class AGMLP_Residual:
     
     def __init__(self, data, y_sarimax, num_epochs = 10, size_pop=10, prob_mut=0.5, tr_ts_percents=[80,20]):
         
@@ -132,10 +132,21 @@ class AGMLPResidual:
         def mutation(population):
             for p in range(1, len(population)):
                 if np.random.rand() > self._prob_mut:
-                    population[p][0] = population[p][0] + np.random.randint(1,2)
-                    population[p][1] = population[p][1] + np.random.randint(1,2)
-                    population[p][2] = population[p][2] + np.random.randint(1,2)
-                    population[p][3] = population[p][3] + np.random.randint(1,2)
+                    population[p][0] = population[p][0] + np.random.randint(-2, 2)
+                    if population[p][0] <= 0:
+                        population[p][0] = 1
+                    
+                    population[p][1] = population[p][1] + np.random.randint(-2, 2)
+                    if population[p][1] <= 0:
+                        population[p][1] = 1
+                    
+                    population[p][2] = population[p][2] + np.random.randint(-2, 2)
+                    if population[p][2] <= 0:
+                        population[p][2] = 1
+                    
+                    population[p][3] = population[p][3] + np.random.randint(-2, 2)
+                    if population[p][3] <= 0:
+                        population[p][3] = 1
 
             return population
 
