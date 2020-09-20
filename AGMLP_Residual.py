@@ -81,7 +81,7 @@ class AGMLP_Residual:
     def gen_population(self):
         population = [[1,1,1,1,'objeto_erro','objeto_ass',np.inf]]*self._size_pop
         for i in range(0, self._size_pop):
-            population[i] = [random.randint(1, 20), random.randint(1, 20),  random.randint(1, 20), random.randint(1, 20),10, 'objeto_erro', 'objeto_ass']
+            population[i] = [random.randint(1, 20), random.randint(1, 20),  random.randint(1, 20), random.randint(1, 20), 10, 'objeto_erro', 'objeto_ass']
         return population
 
     def set_fitness(self, population, start_set_fit): 
@@ -102,7 +102,8 @@ class AGMLP_Residual:
             #y estimado
             X_ass_1_train_in, _, X_ass_1_test_in, _ = self.train_test_split(self._y_sarimax, population[i][1])
             X_ass_2_train_in, _, X_ass_2_test_in, _ = self.train_test_split_prev(erro_estimado, population[i][2],
-                                                                                 population[i][3])        
+                                                                                 population[i][3])
+                                                                                 
             X_in_train = np.concatenate((X_ass_1_train_in, X_ass_2_train_in), axis=1)
             X_in_test = np.concatenate((X_ass_1_test_in, X_ass_2_test_in), axis=1) 
             
@@ -160,7 +161,7 @@ class AGMLP_Residual:
     def search_best_model(self):
         ng = 0
         population = self.gen_population()
-        population = self.set_fitness(population,0)
+        population = self.set_fitness(population, ng)
         
         population.sort(key = lambda x: x[:][-1])
         self._fitness_array = np.append(self._fitness_array, population[0][-1])

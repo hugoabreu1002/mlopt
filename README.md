@@ -20,13 +20,6 @@ use like my ACO
 
 https://pyswarms.readthedocs.io/en/latest/api/pyswarms.discrete.html#module-pyswarms.discrete.binary
 
-## TODO
+## Exemples
 
-### ACO
-
-* Make some plot methods with the Dij matix and the antsHistory
-* Genetic Ant Colony Optimization is a thing
-
-### AGMlp
-
-* possibility of return bests groups of MLPs not Best MLP
+Check de .pynb for usage examples
