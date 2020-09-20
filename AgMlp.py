@@ -105,6 +105,7 @@ class AgMlp:
                 break
 
         self._final_trained_mlps = [p[-2] for p in population]
+        
         return self
 
     def return_VotingRegressor(self, percent):
@@ -112,11 +113,15 @@ class AgMlp:
             returns fited voting regressor objetc percent of bests mlps trained
         """
         self.search_best_individual()
-        Number = int(len(self._final_trained_mlps) * percent/100)
+        Number = int(len(self._final_trained_mlps)*percent/100)
+        if Number < 1:
+            Number = 1
         self._n_voting_mlps = self._final_trained_mlps[:Number]
+        
         return self
 
     def VR_predict(self, Xin):
         filtered = list(filter(lambda x: type(x) is not str, self._n_voting_mlps))
-        averaged_output = np.average(list(map(lambda x: x.predict(Xin), filtered), axis=0))
+        averaged_output = np.average(list(map(lambda x: x.predict(Xin), filtered)), axis=0)
+        
         return averaged_output
