@@ -20,7 +20,7 @@ class AGMLP_VR_Residual(AGMLP_Residual):
                 self._erro, population[i][0])
             
             #AG_erro
-            
+            print(population)
             percent_VR_heuristic = sum(population[i][0:5])/2 # population[i][0:5] são parâmetros da população, sendo cada um número entre 0 e 20 na média.
             if percent_VR_heuristic > 50:
                 percent_VR_heuristic = 50

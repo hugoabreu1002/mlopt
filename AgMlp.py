@@ -113,10 +113,10 @@ class AgMlp:
         """
         self.search_best_individual()
         Number = int(len(self._final_trained_mlps) * percent/100)
-        print(self._final_trained_mlps)
         self._n_voting_mlps = self._final_trained_mlps[:Number]
         return self
 
     def VR_predict(self, Xin):
-        print(self._n_voting_mlps)
-        return np.average(list(map(lambda x: x.predict(Xin), list(filter(lambda x: type(x) is not str, self._n_voting_mlps)))), axis=0)
+        filtered = list(filter(lambda x: type(x) is not str, self._n_voting_mlps))
+        averaged_output = np.average(list(map(lambda x: x.predict(Xin), filtered), axis=0))
+        return averaged_output
