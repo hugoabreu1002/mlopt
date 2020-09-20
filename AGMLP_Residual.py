@@ -81,7 +81,8 @@ class AGMLP_Residual:
     def gen_population(self):
         population = [[1,1,1,1,'objeto_erro','objeto_ass',np.inf]]*self._size_pop
         for i in range(0, self._size_pop):
-            population[i] = [random.randint(1, 20), random.randint(1, 20),  random.randint(1, 20), random.randint(1, 20), 10, 'objeto_erro', 'objeto_ass']
+            population[i] = [random.randint(1, 20), random.randint(1, 20),  random.randint(1, 20), random.randint(1, 20), 'objeto_erro', 'objeto_ass', 10]
+        
         return population
 
     def set_fitness(self, population, start_set_fit): 
