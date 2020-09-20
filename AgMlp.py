@@ -34,6 +34,7 @@ class AgMlp:
         return population
 
     def set_fitness(self, population, start_set_fit):
+        print("len poulation {0}".format(len(population)))
         for i in range(start_set_fit, len(population)):
             mlp_volatil = MLPRegressor(hidden_layer_sizes=(population[i][1], population[i][2], population[i][3]),
                                     activation = population[i][4], solver = population[i][0],
@@ -44,40 +45,35 @@ class AgMlp:
 
             population[i][-1] = mae_fits
             population[i][-2] = mlp_volatil
-            print("solving {0} in mlp population".format(i))
-            print(population[i])
-            return population
-
-    def new_gen(self, population, num_gen):
-        def cruzamento(population):
-            qt_cross = len(population[0])
-            pop_ori = population
-            for p in range(1, len(pop_ori)):
-                if np.random.rand() > self._prob_mut:
-                    population[p][0:int(qt_cross/2)] = pop_ori[int(p/2)][0:int(qt_cross/2)]
-                    population[p][int(qt_cross/2):qt_cross] = pop_ori[int(p/2)][int(qt_cross/2):qt_cross]
-
-            return population
-
-        def mutation(population):
-            for p in range(1, len(population)):
-                if np.random.rand() > self._prob_mut:
-                    population[p][1] = population[p][1] + np.random.randint(1,10)
-                    population[p][2] = population[p][2] + np.random.randint(1,5)
-                    population[p][3] = population[p][3] + np.random.randint(1,2)
-
-            return population
-
-        population = cruzamento(population)
-        population = mutation(population)
-        print("POPULATION Starting Individual")
-        start_set_fit = int(self._size_population*num_gen/(2*self._num_generations))
-        print(start_set_fit)
-        population = self.set_fitness(population, start_set_fit)
-        print("WHOLE GENERATION POPULATION")
-        print(population)
-        population.sort(key = lambda x: x[:][-1]) 
+            print("solving {0} in mlp population of {1}".format(i, len(population)))
         
+        return population
+
+    def cruzamento(self, population):
+        qt_cross = len(population[0])
+        pop_ori = population
+        for p in range(1, len(pop_ori)):
+            if np.random.rand() > self._prob_mut:
+                population[p][0:int(qt_cross/2)] = pop_ori[int(p/2)][0:int(qt_cross/2)]
+                population[p][int(qt_cross/2):qt_cross] = pop_ori[int(p/2)][int(qt_cross/2):qt_cross]
+
+        return population
+
+    def mutation(self, population):
+        for p in range(1, len(population)):
+            if np.random.rand() > self._prob_mut:
+                population[p][1] = population[p][1] + np.random.randint(1,10)
+                population[p][2] = population[p][2] + np.random.randint(1,5)
+                population[p][3] = population[p][3] + np.random.randint(1,2)
+
+        return population
+    
+    def new_gen(self, population, num_gen):
+        population = self.cruzamento(population)
+        population = self.mutation(population)
+        start_set_fit = int(self._size_population*num_gen/(2*self._num_generations))
+        population = self.set_fitness(population, start_set_fit)
+        population.sort(key = lambda x: x[:][-1])
         return population
     
     def early_stop(self):
@@ -119,11 +115,7 @@ class AgMlp:
         self.search_best_individual()
         Number = int(len(self._final_trained_mlps) * percent/100)
         self._n_voting_mlps = self._final_trained_mlps[:Number]
-        print("FINAL TRAINED MLPS")
-        print(self._final_trained_mlps)
         return self
 
     def VR_predict(self, Xin):
-        print("VOTING MLPS")
-        print(self._n_voting_mlps)
         return np.average(list(map(lambda x: x.predict(Xin), list(filter(lambda x: type(x) is not str, self._n_voting_mlps)))), axis=0)

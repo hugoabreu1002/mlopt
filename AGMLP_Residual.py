@@ -85,7 +85,6 @@ class AGMLP_Residual:
         return population
 
     def set_fitness(self, population, start_set_fit): 
-        print('start_set_fit:', start_set_fit)
         for i in range(start_set_fit, len(population)):
             #erro estimado
             erro_train_entrada, erro_train_saida, erro_test_entrada, erro_test_saida = self.train_test_split(
@@ -103,7 +102,7 @@ class AGMLP_Residual:
             X_ass_1_train_in, _, X_ass_1_test_in, _ = self.train_test_split(self._y_sarimax, population[i][1])
             X_ass_2_train_in, _, X_ass_2_test_in, _ = self.train_test_split_prev(erro_estimado, population[i][2],
                                                                                  population[i][3])
-                                                                                 
+
             X_in_train = np.concatenate((X_ass_1_train_in, X_ass_2_train_in), axis=1)
             X_in_test = np.concatenate((X_ass_1_test_in, X_ass_2_test_in), axis=1) 
             
@@ -119,40 +118,41 @@ class AGMLP_Residual:
 
         return population
     
+    def cruzamento(self, population):
+        qt_cross = len(population[0])
+        pop_ori = population
+        for p in range(1, len(pop_ori)):
+            if np.random.rand() > self._prob_mut:
+                population[p][0:int(qt_cross/2)] = pop_ori[int(p/2)][0:int(qt_cross/2)]
+                population[p][int(qt_cross/2):qt_cross] = pop_ori[int(p/2)][int(qt_cross/2):qt_cross]
+
+        return population
+
+    def mutation(self, population):
+        for p in range(1, len(population)):
+            if np.random.rand() > self._prob_mut:
+                population[p][0] = population[p][0] + np.random.randint(-2, 2)
+                if population[p][0] <= 0:
+                    population[p][0] = 1
+                
+                population[p][1] = population[p][1] + np.random.randint(-2, 2)
+                if population[p][1] <= 0:
+                    population[p][1] = 1
+                
+                population[p][2] = population[p][2] + np.random.randint(-2, 2)
+                if population[p][2] <= 0:
+                    population[p][2] = 1
+                
+                population[p][3] = population[p][3] + np.random.randint(-2, 2)
+                if population[p][3] <= 0:
+                    population[p][3] = 1
+
+        return population
+
+
     def new_gen(self, population, num_gen):
-        def cruzamento(population):
-            qt_cross = len(population[0])
-            pop_ori = population
-            for p in range(1, len(pop_ori)):
-                if np.random.rand() > self._prob_mut:
-                    population[p][0:int(qt_cross/2)] = pop_ori[int(p/2)][0:int(qt_cross/2)]
-                    population[p][int(qt_cross/2):qt_cross] = pop_ori[int(p/2)][int(qt_cross/2):qt_cross]
-
-            return population
-
-        def mutation(population):
-            for p in range(1, len(population)):
-                if np.random.rand() > self._prob_mut:
-                    population[p][0] = population[p][0] + np.random.randint(-2, 2)
-                    if population[p][0] <= 0:
-                        population[p][0] = 1
-                    
-                    population[p][1] = population[p][1] + np.random.randint(-2, 2)
-                    if population[p][1] <= 0:
-                        population[p][1] = 1
-                    
-                    population[p][2] = population[p][2] + np.random.randint(-2, 2)
-                    if population[p][2] <= 0:
-                        population[p][2] = 1
-                    
-                    population[p][3] = population[p][3] + np.random.randint(-2, 2)
-                    if population[p][3] <= 0:
-                        population[p][3] = 1
-
-            return population
-
-        population = cruzamento(population)
-        population = mutation(population)
+        population = self.cruzamento(population)
+        population = self.mutation(population)
         population = self.set_fitness(population, int(self._size_pop*num_gen/(2*self._num_epochs)))
         population.sort(key = lambda x: x[:][-1]) 
         

@@ -115,29 +115,29 @@ class AGEnsemble_Residual:
 
         return population
     
+    def cruzamento(self, population):
+        qt_cross = len(population[0])
+        pop_ori = population
+        for p in range(1, len(pop_ori)):
+            if np.random.rand() > self._prob_mut:
+                population[p][0:int(qt_cross/2)] = pop_ori[int(p/2)][0:int(qt_cross/2)]
+                population[p][int(qt_cross/2):qt_cross] = pop_ori[int(p/2)][int(qt_cross/2):qt_cross]
+
+        return population
+
+    def mutation(self, population):
+        for p in range(1, len(population)):
+            if np.random.rand() > self._prob_mut:
+                population[p][0] = population[p][0] + np.random.randint(1,2)
+                population[p][1] = population[p][1] + np.random.randint(1,2)
+                population[p][2] = population[p][2] + np.random.randint(1,2)
+                population[p][3] = population[p][3] + np.random.randint(1,2)
+
+        return population
+
     def new_gen(self, population, num_gen):
-        def cruzamento(population):
-            qt_cross = len(population[0])
-            pop_ori = population
-            for p in range(1, len(pop_ori)):
-                if np.random.rand() > self._prob_mut:
-                    population[p][0:int(qt_cross/2)] = pop_ori[int(p/2)][0:int(qt_cross/2)]
-                    population[p][int(qt_cross/2):qt_cross] = pop_ori[int(p/2)][int(qt_cross/2):qt_cross]
-
-            return population
-
-        def mutation(population):
-            for p in range(1, len(population)):
-                if np.random.rand() > self._prob_mut:
-                    population[p][0] = population[p][0] + np.random.randint(1,2)
-                    population[p][1] = population[p][1] + np.random.randint(1,2)
-                    population[p][2] = population[p][2] + np.random.randint(1,2)
-                    population[p][3] = population[p][3] + np.random.randint(1,2)
-
-            return population
-
-        population = cruzamento(population)
-        population = mutation(population)
+        population = self.cruzamento(population)
+        population = self.mutation(population)
         population = self.set_fitness(population, int(self._size_pop*num_gen/(2*self._num_epochs)))
         population.sort(key = lambda x: x[:][-1]) 
         
