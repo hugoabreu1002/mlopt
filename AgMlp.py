@@ -33,7 +33,7 @@ class AgMlp:
 
         return population
 
-    def set_fitness(self, population, start_set_fit):
+    def set_fitness_and_sort(self, population, start_set_fit):
         print("len poulation {0}".format(len(population)))
         for i in range(start_set_fit, len(population)):
             mlp_volatil = MLPRegressor(hidden_layer_sizes=(population[i][1], population[i][2], population[i][3]),
@@ -45,7 +45,8 @@ class AgMlp:
 
             population[i][-1] = mae_fits
             population[i][-2] = mlp_volatil
-            print("solving {0} in mlp population of {1}".format(i, len(population)))
+        
+        population.sort(key = lambda x: x[:][-1])
         
         return population
 
@@ -72,8 +73,7 @@ class AgMlp:
         population = self.cruzamento(population)
         population = self.mutation(population)
         start_set_fit = int(self._size_population*num_gen/(2*self._num_generations))
-        population = self.set_fitness(population, start_set_fit)
-        population.sort(key = lambda x: x[:][-1])
+        population = self.set_fitness_and_sort(population, start_set_fit)
         return population
     
     def early_stop(self):
@@ -90,8 +90,8 @@ class AgMlp:
     
     def search_best_individual(self):
         population = self.gen_population()
-        population = self.set_fitness(population, 0)
-        population.sort(key = lambda x: x[:][-1])
+        population = self.set_fitness_and_sort(population, 0)
+
         self._fitness_array= np.append(self._fitness_array, population[0][-1])
         self._best_of_all = population[0][-2]
 
@@ -104,18 +104,19 @@ class AgMlp:
             if self.early_stop():
                 break
 
-        self._final_trained_mlps = population[:][-2]
+        self._final_trained_mlps = [p[-2] for p in population]
         return self
 
-    # TODO testar
     def return_VotingRegressor(self, percent):
         """
             returns fited voting regressor objetc percent of bests mlps trained
         """
         self.search_best_individual()
         Number = int(len(self._final_trained_mlps) * percent/100)
+        print(self._final_trained_mlps)
         self._n_voting_mlps = self._final_trained_mlps[:Number]
         return self
 
     def VR_predict(self, Xin):
+        print(self._n_voting_mlps)
         return np.average(list(map(lambda x: x.predict(Xin), list(filter(lambda x: type(x) is not str, self._n_voting_mlps)))), axis=0)
