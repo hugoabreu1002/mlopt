@@ -97,7 +97,7 @@ class ACO(object):
         
         the random idea is like the ants cant get the distance perfectly
         """
-        
+        #TODO revisar essa lógica do update da matriz Dij, pq a busca deve ser feita boa com a menor quantidade possível de formigas.
         for k_ant in range(self._antNumber):
             i_index = self._antsVertice[k_ant]
             for foo in tqdm(range(self._antNumber)):
