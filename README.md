@@ -23,3 +23,7 @@ https://pyswarms.readthedocs.io/en/latest/api/pyswarms.discrete.html#module-pysw
 ## Exemples
 
 Check de .pynb for usage examples
+
+## TODO
+
+Diagrams of Residual Time series hibrid models

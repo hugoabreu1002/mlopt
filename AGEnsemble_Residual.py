@@ -88,8 +88,8 @@ class AGEnsemble_Residual:
                 self._erro, population[i][0])
             
             #AG_erro
-            ensemble_residual = EnsembleSearch(
-                erro_train_entrada, erro_train_saida, erro_test_entrada, erro_test_saida, self._size_pop, self._num_epochs, self._prob_mut).search_best()
+            ensemble_residual = EnsembleSearch(erro_train_entrada, erro_train_saida, erro_test_entrada, erro_test_saida,
+             self._size_pop, self._num_epochs, self._prob_mut).search_best()
 
             best_erro = ensemble_residual.best_of_all_
             
@@ -103,8 +103,8 @@ class AGEnsemble_Residual:
             X_in_test = np.concatenate((X_ass_1_test_in, X_ass_2_test_in), axis=1) 
             
             #AG_ASS
-            ensemble_ass = EnsembleSearch(X_in_train, self._data_train, X_in_test, self._size_pop, self._num_epochs,
-                                     self._size_pop, self._prob_mut).search_best()
+            ensemble_ass = EnsembleSearch(X_in_train, self._data_train, X_in_test, self._data_test,
+             self._size_pop, self._num_epochs, self._prob_mut).search_best()
 
             best_ass = ensemble_ass.best_of_all_
             

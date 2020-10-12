@@ -29,12 +29,20 @@ class EnsembleSearch:
         self.verbose_ = verbose
 
     def gen_population(self):
-        
+        # TODO 
+        # review this method
+        # population could be an atribute, or a list of instance of some individual class.
+        # where one individual would be a list o regressors.
+
         population = [[]]*self.size_pop
         
         for i in range(self.size_pop):
             
             qt_regressor = np.random.randint(2,9)
+
+            # TODO
+            # add parameters to LR
+            # take a look at https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html?highlight=linearregression#sklearn.linear_model.LinearRegression
             lista_LR = ['LR',LR(), {}]
             
             lista_RFR = ['RFR',RFR(), 
@@ -44,6 +52,8 @@ class EnsembleSearch:
                           'min_samples_leaf':np.random.randint(2,10),   
                           'min_weight_fraction_leaf':np.random.rand(1)[0]/2}]
             
+            # TODO
+            # Consider to remove ou replace, becouse is too slow
             lista_SVR = ['SVR',SVR(),
                          {'kernel':random.choice(['linear','rbf','poly','sigmoid']),     
                           'epsilon':np.random.rand(1)[0]/4,
@@ -67,6 +77,11 @@ class EnsembleSearch:
                          {'C': np.random.randint(1,10), 'early_stopping':True,        
                           'n_iter_no_change':np.random.randint(1,10)}]
             
+            # TODO 
+            # add parameters to SGD 
+            # take a look at https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html#sklearn.linear_model.SGDRegressor
+            # consider to implement with https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.Nystroem.html#sklearn.kernel_approximation.Nystroem transformer
+            # it would become a pipiline then?
             lista_SGD = ['SGD',SGD(), {}]
             
             lista_regressors = [lista_LR,lista_RFR,lista_SVR,lista_ADA,lista_BAG,
