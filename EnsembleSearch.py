@@ -122,10 +122,13 @@ class EnsembleSearch:
         return population
     
     def next_population(self, population):
-        
-        for i in range(1, int(len(population)/2)):
+        # In this algorithm there is no mutation. 
+        # no need of mutation, since the algorithm already have stochastics inside.
+
+        # in this for loop change only the last half (worst) of the population.
+        for i in range(int(len(population)/2), len(population)-1):
             qt_regs_pai1 = population[i][0]
-            qt_regs_pai2 = population[2*i][0]
+            qt_regs_pai2 = population[i+1][0]
             
             #aqui mistura os regressores
             if qt_regs_pai1<=qt_regs_pai2:    
