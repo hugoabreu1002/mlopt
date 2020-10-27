@@ -127,25 +127,31 @@ class PSO(swarm):
                 print("Epoch = " + str(epoch) +
                     " best error = %.3f" % self.best_swarm_err)
 
+            # Topology
+            if topology == 'G':
+                foo = "bar"
+            elif topology == 'F':
+                errorlist = list(map(lambda pt: pt.error, self.swarm))
+                weigthlist = [1/x for x in errorlist]
+                sum_weightlist = sum(weigthlist)
+                weigthlist = [w/sum_weightlist for w in weigthlist]
+                focal_particle = np.random.choice(self.swarm, p=weigthlist)
+                focal_pos = focal_particle.position
+                reference_pos = focal_pos
+            elif topology == 'L':
+                numberOfClusters = int(self.number_of_particles/10)
+            else:
+                raise Exception("Wrong char for topology choice, please choose between chars 'G':'Global' 'L':'Local or Ring' 'F':'Focal or Wheel'.")
+
             for i in range(self.number_of_particles): # process each particle
                 # compute new velocity of curr particle
                 pt = self.swarm[i]
-
+                
+                # Topology
                 if topology == 'G':
                     reference_pos = self.best_swarm_pos
-                elif topology == 'L':
-                    numberOfClusters = int(self.number_of_particles/10)
+                if topology == 'L':
                     reference_pos = self.findLocalBestForParticle(pt, numberOfClusters)
-                elif topology == 'F':
-                    errorlist = list(map(lambda pt: pt.error, self.swarm))
-                    weigthlist = [1/x for x in errorlist]
-                    sum_weightlist = sum(weigthlist)
-                    weigthlist = [w/sum_weightlist for w in weigthlist]
-                    focal_particle = np.random.choice(self.swarm, p=weigthlist)
-                    focal_pos = focal_particle.position
-                    reference_pos = focal_pos
-                else:
-                    raise Exception("Wrong char for topology choice, please choose between chars 'G':'Global' 'L':'Local or Ring' 'F':'Focal or Wheel'.")
 
                 for k in range(self.dim): 
                     r1 = pt.rnd.random()    # randomizations
@@ -182,147 +188,3 @@ class PSO(swarm):
             self.historic_best_pos.append(self.best_swarm_pos)
 
         return self
-                    
-    # def Global(self, max_epochs, w_array, c1=2.05, c2=2.05):
-    #     epoch = 0
-    #     while epoch < max_epochs:
-
-    #         self.findGlobalBestInSwarm()
-
-    #         if epoch % 10 == 0 and epoch > 1:
-    #             print("Epoch = " + str(epoch) +
-    #                 " best error = %.3f" % self.best_swarm_err)
-
-    #         for i in range(self.number_of_particles): # process each particle
-    #             # compute new velocity of curr particle
-    #             pt = self.swarm[i]
-
-    #             for k in range(self.dim): 
-    #                 r1 = pt.rnd.random()    # randomizations
-    #                 r2 = pt.rnd.random()
-                
-    #                 pt.velocity[k] = self.update_particle_velocity(pt.velocity[k], pt.best_part_pos[k], pt.position[k], self.best_swarm_pos[k], c1,r1,c2,r2, w_array[epoch])
-
-    #                 if pt.velocity[k] < self.minx:
-    #                     pt.velocity[k] = self.minx
-    #                 elif pt.velocity[k] > self.maxx:
-    #                     pt.velocity[k] = self.maxx
-
-    #             # compute new position using new velocity
-    #             for k in range(self.dim): 
-    #                 pt.position[k] += pt.velocity[k]
-            
-    #             # compute error of new position
-    #             pt.error_func()
-
-    #             # is new position a new best for the particle?
-    #             if pt.error < pt.best_part_err:
-    #                 pt.best_part_err = pt.error
-    #                 pt.best_part_pos = copy.copy(pt.position)
-
-    #             # is new position a new best overall?
-    #             if pt.error < self.best_swarm_err:
-    #                 self.best_swarm_err = pt.error
-    #                 self.best_swarm_pos = copy.copy(pt.position)
-                
-    #             self.swarm[i] = pt
-    #             # for-each particle
-            
-    #         epoch += 1
-    
-    # def Local(self, max_epochs, w_array, c1=2.05, c2=2.05, numberOfClusters = 5):
-    #     epoch = 0
-    #     while epoch < max_epochs:
-
-    #         if epoch % 10 == 0 and epoch > 1:
-    #             print("Epoch = " + str(epoch) +
-    #                 " best error = %.3f" % self.best_swarm_err)
-
-    #         for i in range(self.number_of_particles): # process each particle
-    #             # compute new velocity of curr particle
-    #             pt = self.swarm[i]
-
-    #             local_best_pos = self.findLocalBestForParticle(pt, numberOfClusters)
-
-    #             for k in range(self.dim): 
-    #                 r1 = pt.rnd.random()    # randomizations
-    #                 r2 = pt.rnd.random()
-                
-    #                 pt.velocity[k] =  (w_array[epoch] * pt.velocity[k]) + (c1 * r1 * (pt.best_part_pos[k] - pt.position[k])) +  (c2 * r2 * (local_best_pos[k] - pt.position[k])) 
-
-    #                 if pt.velocity[k] < self.minx:
-    #                     pt.velocity[k] = self.minx
-    #                 elif pt.velocity[k] > self.maxx:
-    #                     pt.velocity[k] = self.maxx
-
-    #             # compute new position using new velocity
-    #             for k in range(self.dim): 
-    #                 pt.position[k] += pt.velocity[k]
-            
-    #             # compute error of new position
-    #             pt.error_func()
-
-    #             # is new position a new best for the particle?
-    #             if pt.error < pt.best_part_err:
-    #                 pt.best_part_err = pt.error
-    #                 pt.best_part_pos = copy.copy(pt.position)
-
-    #             # is new position a new best overall?
-    #             if pt.error < self.best_swarm_err:
-    #                 self.best_swarm_err = pt.error
-    #                 self.best_swarm_pos = copy.copy(pt.position)
-                
-    #             self.swarm[i] = pt
-    #             # for-each particle
-            
-    #         epoch += 1
-
-    # def Focal(self, max_epochs, w_array, c1=2.05, c2=2.05):
-    #     epoch = 0
-    #     while epoch < max_epochs:
-
-    #         if epoch % 10 == 0 and epoch > 1:
-    #             print("Epoch = " + str(epoch) +
-    #                 " best error = %.3f" % self.best_swarm_err)
-
-    #         for i in range(self.number_of_particles): # process each particle
-    #             # compute new velocity of curr particle
-    #             pt = self.swarm[i]
-
-    #             errorlist = list(map(lambda pt: pt.error, self.swarm))
-    #             errorlist = 1/errorlist
-    #             focal_particle = np.random.choice(self.swarm, p=errorlist/sum(errorlist))
-    #             focal_pos = focal_particle.position
-
-    #             for k in range(self.dim): 
-    #                 r1 = pt.rnd.random()    # randomizations
-    #                 r2 = pt.rnd.random()
-                
-    #                 pt.velocity[k] =  (w_array[epoch] * pt.velocity[k]) + (c1 * r1 * (pt.best_part_pos[k] - pt.position[k])) +  (c2 * r2 * (focal_pos[k] - pt.position[k])) 
-
-    #                 if pt.velocity[k] < self.minx:
-    #                     pt.velocity[k] = self.minx
-    #                 elif pt.velocity[k] > self.maxx:
-    #                     pt.velocity[k] = self.maxx
-
-    #             # compute new position using new velocity
-    #             for k in range(self.dim): 
-    #                 pt.position[k] += pt.velocity[k]
-            
-    #             # compute error of new position
-    #             pt.error_func()
-
-    #             # is new position a new best for the particle?
-    #             if pt.error < pt.best_part_err:
-    #                 pt.best_part_err = pt.error
-    #                 pt.best_part_pos = copy.copy(pt.position)
-
-    #             # is new position a new best overall?
-    #             if pt.error < self.best_swarm_err:
-    #                 self.best_swarm_err = pt.error
-    #                 self.best_swarm_pos = copy.copy(pt.position)
-                
-    #             self.swarm[i] = pt
-    #             # for-each particle
-            
-    #         epoch += 1
