@@ -1,6 +1,6 @@
-# Hibrid Models
+# ML-OPT-IA-Algorithms
 
-Here I will keep my hybrid IA models
+Here I will keep the Algorithms that I wrote, or cool examples with packages that I found on web.
 
 ## Descriptions
 
