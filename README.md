@@ -12,6 +12,7 @@ Here I will keep the Algorithms that I wrote, or cool examples with packages tha
 * AGMLPResidual.py - Hibrid model with MLPs correct residual of arima/sarima/sarimax
 * AgMlp.py - AG otimization of MLPs
 * EnsembleSearch.py - AG otimization of Ensembles
+* GA and DE optimization examples in notebooks folder.
 
 ## Exemples
 
