@@ -34,12 +34,12 @@ class IWO(Weed):
         self.historic_best_error = []
         self.best_iwo_cost = sys.float_info.max
     
-    def Reproduction(self, population, Sigma, BestCost, WorstCost, Smin=0, Smax=5):
+    def Reproduction(self, population, Sigma, minCost, maxCost, Smin=0, Smax=5):
         # Initialize Offsprings Population
         newpop = []
 
         for i in range(len(population)):
-            ratio = (population[i].Cost - WorstCost)/(BestCost - WorstCost)
+            ratio = (population[i].Cost - minCost)/(maxCost - minCost)
             S = int(np.floor(Smin + (Smax - Smin)*ratio))
             
             for j in range(S):
@@ -59,9 +59,11 @@ class IWO(Weed):
         sorted_pop = sorted(appended_pop, key=lambda x: x.Cost, reverse=False)
         return sorted_pop[:weed_qtz]
     
-    def search(self, weed_qtz=30, MaxIt=200, print_at_every = 10, Smin=0, Smax=5, Exponent = 2, sigma_initial = 0.5, sigma_final = 0.001):
+    def search(self, weed_qtz_i=10, weed_qtz_f=100, MaxIt=200, print_at_every = 10, Smin=0, Smax=5, Exponent = 2, sigma_initial = 0.5, sigma_final = 0.001):
         plot_follow = print_at_every
-        population = [Weed(self.dim, self.minx, self.maxx, self.CostFunction, self.CostFunctionParameters) for _ in range(weed_qtz)]
+        population = [Weed(self.dim, self.minx, self.maxx, self.CostFunction, self.CostFunctionParameters) for _ in range(weed_qtz_i)]
+        weed_qtz = weed_qtz_i
+        
         for it in tqdm(range(MaxIt)):
             
             # Update Standard Deviation
@@ -69,8 +71,11 @@ class IWO(Weed):
             
             # Get Best and Worst Cost Values
             Costs = [pop.Cost for pop in population]            
-            newpopulation = self.Reproduction(population, Sigma, min(Costs), max(Costs), Smin, Smax)            
+            newpopulation = self.Reproduction(population, Sigma, min(Costs), max(Costs), Smin, Smax)
             population = self.MergePopulation(population, newpopulation, weed_qtz)
+            
+            # increase max population size
+            weed_qtz += int((weed_qtz_f - weed_qtz)*it/MaxIt)
             
             self.historic_best_pos.append(population[0].Position)
             self.historic_best_error.append(population[0].Cost)
@@ -79,6 +84,6 @@ class IWO(Weed):
                 plot_follow += print_at_every
                 # mostrando a melhor rota a cada iteracao
                 print("######## iteracao {0} ##########".format(it))
-                print("Best Point {0}, Best Cost: {1}".format(population[0].Position, population[0].Cost))
+                print("Best Point {0}, Best Cost: {1}, Sigma: {2}, Weeds: {3}".format(population[0].Position, population[0].Cost, Sigma, len(population)))
 
         return self
