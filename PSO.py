@@ -122,7 +122,7 @@ class PSO(swarm):
         if topology == 'G':
             foo = "bar"
         elif topology == 'F':
-            reference_pos = self.swarm[0].position
+            foo = "bar"
         elif topology == 'L':
             numberOfClusters = int(self.number_of_particles/3)
         else:
@@ -141,9 +141,11 @@ class PSO(swarm):
                 
                 # Topology
                 if topology == 'G':
-                    reference_pos = self.best_swarm_pos
+                    reference_pos = copy.copy(self.best_swarm_pos)
+                elif topology == 'F':
+                    reference_pos = copy.copy(self.swarm[0].position)
                 elif topology == 'L':
-                    reference_pos = self.findLocalBestForParticle(pt, numberOfClusters)
+                    reference_pos = copy.copy(self.findLocalBestForParticle(pt, numberOfClusters))
 
                 for k in range(self.dim): 
                     r1 = pt.rnd.random()    # randomizations
