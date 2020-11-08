@@ -72,8 +72,8 @@ class swarm:
 
     def findLocalBestForParticle(self, particle, numberOfClusters):
         local_swarm = self.getLocalNeighbors(particle, numberOfClusters)
-        best_local_pos = [0.0]*len(local_swarm)
-        local_best_swarm_err = sys.float_info.max
+        best_local_pos = local_swarm[0].position
+        local_best_swarm_err = local_swarm[0].error
         
         for i, pt in enumerate(local_swarm): # check each particle
             if pt.error < local_best_swarm_err:
@@ -100,7 +100,7 @@ class PSO(swarm):
     def update_particle_velocity(self, p_v, p_best, p_pos, g_best, c1, r1, c2, r2, w):
         return (w * p_v) + (c1 * r1 * (p_best - p_pos)) +  (c2 * r2 * (g_best - p_pos)) 
 
-    def Solver(self, max_epochs, w=0.8, c1=2.05, c2=2.05, topology='G'):
+    def Solver(self, max_epochs, plot_at_every=50, w=0.8, c1=2.05, c2=2.05, topology='G'):
         """
         max_epochs - the number of epochs to search
         w - the inertial coefficient. It must be under 1, and float or tuple type. If tuple, (wi, wf), the algorithm will linearly decay the inertial coefficient over the epochs til the final value.
@@ -118,30 +118,22 @@ class PSO(swarm):
                 raise Exception("w must be lower than 1 and bigger than 0")
             else:
                 w_array = [w]*max_epochs
-
+        
+        if topology == 'G':
+            foo = "bar"
+        elif topology == 'F':
+            reference_pos = self.swarm[0].position
+        elif topology == 'L':
+            numberOfClusters = int(self.number_of_particles/3)
+        else:
+            raise Exception("Wrong char for topology choice, please choose between chars 'G':'Global' 'L':'Local or Ring' 'F':'Focal or Wheel'.")
+        
+        plot_follow = plot_at_every
         for epoch in tqdm(range(max_epochs)):
-
-            self.findGlobalBestInSwarm()
-
-            if epoch % int(max_epochs/10) == 0 and epoch > 1:
-                print("Epoch = " + str(epoch) +
-                    " best error = %.3f" % self.best_swarm_err)
-
             # Topology
-            if topology == 'G':
-                foo = "bar"
-            elif topology == 'F':
-                errorlist = list(map(lambda pt: pt.error, self.swarm))
-                weigthlist = [1/x for x in errorlist]
-                sum_weightlist = sum(weigthlist)
-                weigthlist = [w/sum_weightlist for w in weigthlist]
-                focal_particle = np.random.choice(self.swarm, p=weigthlist)
-                focal_pos = focal_particle.position
-                reference_pos = focal_pos
-            elif topology == 'L':
-                numberOfClusters = int(self.number_of_particles/10)
-            else:
-                raise Exception("Wrong char for topology choice, please choose between chars 'G':'Global' 'L':'Local or Ring' 'F':'Focal or Wheel'.")
+            self.findGlobalBestInSwarm()
+            self.historic_best_error.append(self.best_swarm_err)
+            self.historic_best_pos.append(self.best_swarm_pos)
 
             for i in range(self.number_of_particles): # process each particle
                 # compute new velocity of curr particle
@@ -150,7 +142,7 @@ class PSO(swarm):
                 # Topology
                 if topology == 'G':
                     reference_pos = self.best_swarm_pos
-                if topology == 'L':
+                elif topology == 'L':
                     reference_pos = self.findLocalBestForParticle(pt, numberOfClusters)
 
                 for k in range(self.dim): 
@@ -183,8 +175,12 @@ class PSO(swarm):
                     self.best_swarm_err = self.swarm[i].error
                     self.best_swarm_pos = copy.copy(self.swarm[i].position) 
 
-            self.findGlobalBestInSwarm()
-            self.historic_best_error.append(self.best_swarm_err)
-            self.historic_best_pos.append(self.best_swarm_pos)
-
+            # self.findGlobalBestInSwarm()
+            # self.historic_best_error.append(self.best_swarm_err)
+            # self.historic_best_pos.append(self.best_swarm_pos)
+            
+            if epoch > plot_follow:
+                print("Epoch: {0}, best error: {1:.3f}, best pos: {2}".format(epoch, self.best_swarm_err, self.best_swarm_pos))
+                plot_follow += plot_at_every
+                
         return self
