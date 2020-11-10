@@ -1,13 +1,9 @@
 import numpy as np
 from numpy.random import choice
-from scipy import spatial
-import matplotlib.pyplot as plt
 import random
-import math
 from tqdm import tqdm
 import numpy as np
 import sys
-import copy
 
 class Weed:
     def __init__(self, dim, minx, maxx, function, functionArgs=[]):
