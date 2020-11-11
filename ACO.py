@@ -1,6 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 from scipy.stats import mode
+import sys
 
 class ACO(object):
     """
@@ -37,7 +38,7 @@ class ACO(object):
         self._oldAntsVertice = None
         self._verticesFitness = None
         self._allBest = None
-        self._allBestFitness = np.inf
+        self._allBestFitness = sys.maxsize
         self._ants_History = None
         self._antNumber = None
         self._antTours = None
@@ -100,43 +101,46 @@ class ACO(object):
         #TODO revisar essa lógica do update da matriz Dij, pq a busca deve ser feita boa com a menor quantidade possível de formigas.
         for k_ant in range(self._antNumber):
             i_index = self._antsVertice[k_ant]
-            for foo in tqdm(range(self._antNumber)):
-                j_index = np.random.choice(range(0, self._Space.shape[0]))
-                if Dij[i_index, j_index] == np.inf: #np.inf
+            j_index = np.random.choice(range(0, self._Space.shape[0]))
+            
+            if i_index != j_index: # ant should not stay at the point
 
-                    if verbose:
-                        print("Setting fitness for")
-                        print(self._Space[i_index, :])
+                if verbose:
+                    print("Setting fitness for")
+                    print(self._Space[i_index, :])
 
-                    Ci = self.fitnessFunction(self._Space[i_index, :], self._fitnessFunctionArgs)
-                    self._verticesFitness[i_index] = Ci
+                Ci = self.fitnessFunction(self._Space[i_index, :], self._fitnessFunctionArgs)
+                self._verticesFitness[i_index] = Ci
 
-                    if verbose:
-                        print("fitness is")
-                        print(Ci)
-                        print("Setting fitness for")
-                        print(self._Space[j_index, :])
-                    
-                    Cj = self.fitnessFunction(self._Space[j_index, :], self._fitnessFunctionArgs)
-                    self._verticesFitness[j_index] = Cj
+                if verbose:
+                    print("fitness is")
+                    print(Ci)
+                    print("Setting fitness for")
+                    print(self._Space[j_index, :])
+                
+                Cj = self.fitnessFunction(self._Space[j_index, :], self._fitnessFunctionArgs)
+                self._verticesFitness[j_index] = Cj
 
-                    if verbose:
-                        print("fitness is")
-                        print(Cj)
+                if verbose:
+                    print("fitness is")
+                    print(Cj)
 
-                    Dij_ij = np.exp((Cj-Ci)/Ci)
-                    Dij[i_index, j_index] = Dij_ij + Dij_ij*np.random.rand(1)/10
-        
-                    Dij_ji = np.exp((Ci-Cj)/Cj)
-                    Dij[j_index, i_index] = Dij_ji + Dij_ji*np.random.rand(1)/10
+                Dij_ij = np.exp((Cj-Ci)/Ci)
+                Dij[i_index, j_index] = Dij_ij #+ Dij_ij*np.random.rand(1)/10
+    
+                Dij_ji = np.exp((Ci-Cj)/Cj)
+                Dij[j_index, i_index] = Dij_ji #+ Dij_ji*np.random.rand(1)/10
+            
+            else:
+                Dij[j_index, i_index] = sys.maxsize
         
         return Dij
     
                                           
     def updateTij(self, Tij, Dij, Ants, last_Ants, rho=0.5, Q=1):
-        Dij_inf = Dij == np.inf
-        Dij_notinf = Dij != np.inf
-        Dij[Dij_inf] = Dij_notinf.max()
+        # Dij_inf = Dij == sys.maxsize
+        # Dij_notinf = Dij != sys.maxsize
+        # Dij[Dij_inf] = Dij_notinf.max()
 
         sumdeltaTij = np.zeros(Tij.shape)
 
@@ -151,9 +155,9 @@ class ACO(object):
 
                                           
     def updatePij(self, Pij, Tij, Dij, alpha=1, beta=1):
-        Dij_inf = Dij == np.inf
-        Dij_notinf = Dij != np.inf
-        Dij[Dij_inf] = Dij_notinf.max()
+        # Dij_inf = Dij == sys.maxsize
+        # Dij_notinf = Dij != sys.maxsize
+        # Dij[Dij_inf] = Dij_notinf.max()
 
         Pij = (Tij**alpha)/(Dij**beta)
         Pij += np.random.randint(1, size=Pij.shape)/10
@@ -165,8 +169,8 @@ class ACO(object):
 
 
     def getHistorySolutions(self):
-        #TODO
-        return 0
+        self._ants_History = list(filter(lambda x: not x is None, self._ants_History))
+        return self._ants_History, 
     
     def plotHistorySolutions(self):
         #TODO
@@ -198,7 +202,7 @@ class ACO(object):
         """
         antNumber : Number of ants
         antTours : Number of tours each ant will make on the graph
-        dimentionsRanges : Dimentions of the Graph
+        dimentionsRanges : Dimentions of the Graph, [[x1_min:x1_max],[x2_1, x2_2, x2_3, ...],...]
         function : function to be optimized
         functionArgs : *args of the function
         """
@@ -209,8 +213,6 @@ class ACO(object):
         self._fitnessFunctionArgs = functionArgs
 
         self.initializeMatricesAndAntsPosition()
-        self._antsVertice = np.zeros(self._antNumber, dtype=int)
-        self._oldAntsVertice = np.zeros(self._antNumber, dtype=int)
         
         for it in tqdm(range(self._antTours)):
             self._Dij = self.updateDij(self._Dij, verbose)
