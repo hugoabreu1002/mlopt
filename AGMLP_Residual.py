@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 class AGMLP_Residual:
     
-    def __init__(self, data, y_sarimax, num_epochs = 10, size_pop=10, prob_mut=0.5, tr_ts_percents=[80,20]):
+    def __init__(self, data, y_sarimax, num_epochs = 10, size_pop=10, prob_mut=0.5, tr_ts_percents=[80,20], alpha_stop=1e-4):
         
         self._data = data
         self._data_train = data[:int(tr_ts_percents[0]/100*len(data))]
@@ -23,6 +23,7 @@ class AGMLP_Residual:
         self._size_pop = size_pop
         self._prob_mut = prob_mut
         self._tr_ts_percents = tr_ts_percents
+        self.alpha_stop = alpha_stop
         self._fitness_array = np.array([])
         self._best_of_all = None
         
@@ -32,7 +33,7 @@ class AGMLP_Residual:
         if len(array) > 4:
             array_diff1_1 = array[1:] - array[:-1]
             array_diff2 = array_diff1_1[1:] - array_diff1_1[:-1]
-            if (array_diff2[-4:].mean() < 0) and (abs(array_diff1_1[-4:].mean()) <1e-3):
+            if (array_diff2[-4:].mean() > 0) and (abs(array_diff1_1[-4:].mean()) < self.alpha_stop):
                 to_break = True
 
         return to_break

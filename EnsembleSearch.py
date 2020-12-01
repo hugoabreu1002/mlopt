@@ -16,7 +16,7 @@ from tqdm import tqdm
 class EnsembleSearch:
     
     def __init__(self, X_train, y_train, X_test, y_test,
-                 size_pop=20, epochs=5, verbose=True):
+                 size_pop=20, epochs=5, alpha_stop=1e-4, verbose=True):
         
         self.X_train = X_train
         self.y_train = y_train
@@ -27,6 +27,7 @@ class EnsembleSearch:
         self.fitness_array_ = np.array([])
         self.best_of_all_ = None
         self.verbose_ = verbose
+        self.alpha_stop = alpha_stop
 
     def gen_population(self):
         # TODO 
@@ -157,7 +158,7 @@ class EnsembleSearch:
                 print('first derivative: ', abs(array_diff1_1[-2:].mean()))
                 print('featness: ', array[-1])
                 
-            if (array_diff2[-2:].mean()) > 0 and (abs(array_diff1_1[-3:].mean()) <1e-3):
+            if (array_diff2[-4:].mean()) > 0 and (abs(array_diff1_1[-4:].mean()) < self.alpha_stop):
                 to_break = True
         
         return to_break
