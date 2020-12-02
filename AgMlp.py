@@ -8,7 +8,7 @@ from sklearn.ensemble import VotingRegressor
 
 class AgMlp:
 
-    def __init__(self,X_train, y_train, X_test, y_test, num_generations, size_population, prob_mut):
+    def __init__(self,X_train, y_train, X_test, y_test, num_generations, size_population, prob_mut, alpha_stop=1e-4):
         self._X_train = X_train
         self._y_train = y_train
         self._X_test = X_test
@@ -17,6 +17,7 @@ class AgMlp:
         self._size_population = size_population
         self._prob_mut = prob_mut
         self._fitness_array = np.array([])
+        self._alpha_stop = alpha_stop
         self._best_of_all = None
         self._final_trained_mlps = None
         self._n_voting_mlps = None
@@ -80,10 +81,9 @@ class AgMlp:
         array = self._fitness_array
         to_break=False
         if len(array) > 4:
-            array_diff1_1 = array[1:] - array[:-1]
-            #array_diff1_2 = array[2:] - array[:-2]
-            array_diff2 = array_diff1_1[1:] - array_diff1_1[:-1]
-            if (array_diff2[-4:].mean() < 0) and (abs(array_diff1_1[-4:].mean()) <1e-3):
+            array_diff1 = array[1:] - array[:-1]
+            array_diff2 = array_diff1[1:] - array_diff1[:-1]
+            if (array_diff2[-4:].mean() > 0) and (abs(array_diff1[-4:].mean()) < self._alpha_stop):
                 to_break = True
 
         return to_break

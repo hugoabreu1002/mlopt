@@ -23,7 +23,7 @@ class AGMLP_Residual:
         self._size_pop = size_pop
         self._prob_mut = prob_mut
         self._tr_ts_percents = tr_ts_percents
-        self.alpha_stop = alpha_stop
+        self._alpha_stop = alpha_stop
         self._fitness_array = np.array([])
         self._best_of_all = None
         
@@ -33,7 +33,7 @@ class AGMLP_Residual:
         if len(array) > 4:
             array_diff1_1 = array[1:] - array[:-1]
             array_diff2 = array_diff1_1[1:] - array_diff1_1[:-1]
-            if (array_diff2[-4:].mean() > 0) and (abs(array_diff1_1[-4:].mean()) < self.alpha_stop):
+            if (array_diff2[-4:].mean() > 0) and (abs(array_diff1_1[-4:].mean()) < self._alpha_stop):
                 to_break = True
 
         return to_break
