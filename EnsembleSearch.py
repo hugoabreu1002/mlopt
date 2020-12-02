@@ -164,6 +164,8 @@ class EnsembleSearch:
         return to_break
 
     def search_best(self):
+        # TODO
+        # it would be nicer to test each regressor from the ensemble individually too and add this information to the final choice.
         population = self.gen_population()
         population = self.set_fitness(population)
         population.sort(key = lambda x: x[-1])  
