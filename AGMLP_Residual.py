@@ -88,7 +88,7 @@ class AGMLP_Residual:
 
     def set_fitness(self, population, start_set_fit): 
         for i in range(start_set_fit, len(population)):
-            #erro estimado
+            #obter o erro estimado
             erro_train_entrada, erro_train_saida, erro_test_entrada, erro_test_saida = self.train_test_split(
                 self._erro, population[i][0])
             
@@ -100,7 +100,7 @@ class AGMLP_Residual:
             
             erro_estimado = np.concatenate([best_erro.predict(erro_train_entrada), best_erro.predict(erro_test_entrada)])
 
-            #y estimado
+            #obter o y estimado
             X_ass_1_train_in, _, X_ass_1_test_in, _ = self.train_test_split(self._y_sarimax, population[i][1])
             X_ass_2_train_in, _, X_ass_2_test_in, _ = self.train_test_split_prev(erro_estimado, population[i][2],
                                                                                  population[i][3])
