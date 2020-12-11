@@ -131,7 +131,7 @@ class EnsembleSearch:
             qt_regs_pai1 = population[i][0]
             qt_regs_pai2 = population[i+1][0]
             
-            #aqui mistura os regressores
+            #cruzamento
             if qt_regs_pai1<=qt_regs_pai2:    
                 population[i][1][:int(qt_regs_pai1/2)] = population[2*i][1][:int(qt_regs_pai1/2)]
             else:
