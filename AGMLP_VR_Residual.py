@@ -3,8 +3,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import VotingRegressor
 from sklearn.datasets import make_regression
 from sklearn import preprocessing
-from hibridmodels.AgMlp import AgMlp as Ag_mlp
-from hibridmodels.AGMLP_Residual import AGMLP_Residual
+from ML_Algorithms.AgMlp import AgMlp as Ag_mlp
+from ML_Algorithms.AGMLP_Residual import AGMLP_Residual
 import numpy as np
 import random
 from tqdm import tqdm

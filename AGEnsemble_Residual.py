@@ -2,7 +2,7 @@ from sklearn.metrics import mean_absolute_error as mae
 import numpy as np
 import random
 from tqdm import tqdm
-from hibridmodels.EnsembleSearch import EnsembleSearch
+from ML_Algorithms.EnsembleSearch import EnsembleSearch
 
 class AGEnsemble_Residual:
     
