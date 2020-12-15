@@ -160,11 +160,11 @@ def sarimax_Exog_PSO_search(pso_particles, pso_interations, searchSpace, exog_va
         qt_exog_variables = 4
         searchSpace = [p, d, q, sp, sd, sq, s, qt_exog_variables]
     """
-    exog_possibilities_qt = exog_possibilities_matrix.shape[1]**2 
+    exog_possibilities_qt = exog_variables_matrix.shape[1]**2 
 
     # Call instance of LBestPSO with a neighbour-size of 3 determined by
     # the L2 (p=2) distance.
-    optimizer = ps.single.LocalBestPSO(n_particles=pso_particles, dimensions=1, bounds=([0,0], [searchSpace, exog_possibilities_qt]),
+    optimizer = ps.single.LocalBestPSO(n_particles=pso_particles, dimensions=1, bounds=([0,0,0,0,0,0,0], searchSpace),
                                        options=options_PSO)
 
     # Perform optimization
