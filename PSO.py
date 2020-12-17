@@ -4,7 +4,6 @@ import random
 import math    # cos() for Rastrigin
 import copy    # array-copying convenience
 import sys     # max float
-from sklearn.neighbors import NearestNeighbors
 
 class particle(object):
     """
