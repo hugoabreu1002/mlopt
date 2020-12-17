@@ -1,7 +1,8 @@
 scikit-learn
 numpy
-pyswarm
+pyswarms
 tqdm
 scipy
 statsmodels
 pandas
+matplotlib
