@@ -3,3 +3,5 @@ numpy
 pyswarm
 tqdm
 scipy
+statsmodels
+pandas
