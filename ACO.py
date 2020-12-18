@@ -60,7 +60,7 @@ class ACO(object):
             rows = len(d)*rows
 
         print("dimentions Ranges passed: ", self._dimentionsRanges)
-        print("number of Space rows: ", rows)
+        print("number of Space Possibilities (rows): ", rows)
         
         Space = np.zeros((rows, len(self._dimentionsRanges)))
 
