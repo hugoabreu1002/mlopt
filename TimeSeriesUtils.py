@@ -148,7 +148,10 @@ def sarimax_ACO_search(endo_var, exog_var_matrix, searchSpace, options_ACO, verb
     rho = options_ACO['rho']
     Q = options_ACO['Q']
     
-    searchSpace.append(range(0,2**exog_var_matrix.shape[1]))
+    print("Original search Space:", searchSpace)
+    exogs_possibilites = range(0,2**exog_var_matrix.shape[1]) 
+    searchSpace.append(exogs_possibilites)
+    print("search Space with Exog Possibilities: ", searchSpace)
     
     X = searchSpace
     warnings.filterwarnings("ignore") # specify to ignore warning messages
@@ -156,9 +159,9 @@ def sarimax_ACO_search(endo_var, exog_var_matrix, searchSpace, options_ACO, verb
 
     best_result, _ = ACOsearch.optimize(antNumber, antTours, dimentionsRanges=X, function=SARIMAX_aic,
                                         functionArgs=[endo_var, exog_var_matrix],  verbose=verbose)
-    
+    print("BEST result: ", best_result)
     param = best_result[0:3]
-    param_seasonal = best_result[3:]
+    param_seasonal = best_result[3:7]
     IntBinPos = int(best_result[-1])
     listPosb = convertInt2BinaryList(IntBinPos)
     if len(listPosb) > 0:
@@ -213,9 +216,14 @@ def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, pso_particles, ps
             
         return return_matrix
 
-    searchSpace.append(range(0,2**exog_var_matrix.shape[1]))
+    print("Original search Space:", searchSpace)
+    exogs_possibilites = range(0,2**exog_var_matrix.shape[1]) 
+    searchSpace.append(exogs_possibilites)
+    print("search Space with Exog Possibilities: ", searchSpace)
+    
     searchSpacePSO = list(map(lambda L: max(L), searchSpace))
-    print(searchSpacePSO)
+    min_boudaries = np.zeros(len(searchSpacePSO))
+    print("PSO boundaries: ", min_boudaries, searchSpacePSO)
     
     rows = 1
     for d in searchSpacePSO:
@@ -223,7 +231,7 @@ def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, pso_particles, ps
 
     print("number of Space Possibilities (rows): ", rows)
     
-    optimizer = ps.global_best.GlobalBestPSO(n_particles=pso_particles, dimensions=len(searchSpacePSO), bounds=(np.zeros(len(searchSpacePSO)), searchSpacePSO), options=options_PSO)
+    optimizer = ps.global_best.GlobalBestPSO(n_particles=pso_particles, dimensions=len(searchSpacePSO), bounds=(min_boudaries, searchSpacePSO), options=options_PSO)
 
     # Perform optimization
     kwargs_pso = {'endo':endo_var, 'exog':exog_var_matrix}
@@ -231,6 +239,8 @@ def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, pso_particles, ps
     
     # return predicted array
     best_result = stats[1]
+    
+    print("BEST result: ", stats[0], stats[1].astype('int'))
     param = best_result[0:3].astype('int')
     param_seasonal = best_result[3:7].astype('int')
     if param_seasonal[-1] < 0:
