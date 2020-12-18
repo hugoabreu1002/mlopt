@@ -13,6 +13,7 @@ Here I will keep the Algorithms that I wrote, or cool examples with packages tha
 * AgMlp.py - AG otimization of MLPs
 * EnsembleSearch.py - AG otimization of Ensembles
 * GA and DE optimization examples in notebooks folder.
+* TimeSeriesUtils.py - bunch of functions to help with time series.
 
 ## Exemples
 
