@@ -330,17 +330,11 @@ def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options
     ACOsearch = ACO(alpha, beta, rho, Q)
     best_result, _ = ACOsearch.optimize(antNumber, antTours, dimentionsRanges=searchSpace, function=SARIMAX_aic,
                                         functionArgs=[endo_var, exog_var_matrix, PDQS],  verbose=verbose)
+    
     print("BEST result: ", best_result)
-    param = best_result[0:3]
-    param_seasonal = best_result[3:7]
-    IntBinPos = int(best_result[-1])
-    listPosb = convertInt2BinaryList(IntBinPos)
-    if len(listPosb) > 0:
-        true_exog = exog_var_matrix[:, listPosb]
-    else:
-        true_exog = None 
-        
-    mod = SARIMAX(endo_var, exog=true_exog, order=param, seasonal_order=param_seasonal,
+    param = best_result
+    param_seasonal = PDQS
+    mod = SARIMAX(endo_var, exog=exog_var_matrix, order=param, seasonal_order=param_seasonal,
                                   enforce_stationarity=False, enforce_invertibility=False)
 
     results = mod.fit(disp=False)
@@ -407,6 +401,7 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
     searchSpaceACO = searchSpace[:3]
     AllKwargs = {'kwargs': {'searchSpaceACO':searchSpaceACO, 'endo':endo_var, 'exog':exog_var_matrix,'verbose':verbose},
                  'options_ACO':options_ACO}
+    
     stats = optimizer.optimize(sarimax_ACO_PDQ_search_MAPE, iters=options_PSO['n_iterations'],
                                verbose=verbose, **AllKwargs)
     
