@@ -1,7 +1,9 @@
+import sparse
 import numpy as np
 from tqdm import tqdm
 from scipy.stats import mode
 import sys
+import itertools as it
 
 class ACO(object):
     """
@@ -54,34 +56,23 @@ class ACO(object):
             
         The vertices of the graph will be a line of Space
         """
-                
-        rows = 1
-        for d in self._dimentionsRanges:
-            rows = len(d)*rows
-
         print("dimentions Ranges passed: ", self._dimentionsRanges)
-        print("number of Space Possibilities (rows): ", rows)
-        
-        Space = np.zeros((rows, len(self._dimentionsRanges)))
-
-        for r in range(rows):
-            for di, dobjtec in enumerate(self._dimentionsRanges):
-                if (r >= len(dobjtec)):
-                    Space[r, di] = dobjtec[r%len(dobjtec)]
-                else:
-                    Space[r, di] = dobjtec[r]
-
+        Space = np.array(list(it.product(*self._dimentionsRanges)), dtype = np.int)
+        print("Space Created: ", Space)
+        print("number of Space Possibilities (rows): ", Space.shape[0])
         return Space    
     
     def initializeVerticesFitness(self):
         return 1/np.zeros(self._Space.shape[0])
     
-    def initializeMatricesAndAntsPosition(self):    
+    def initializeMatricesAndAntsPosition(self):
+        # TODO make with dynamic programming to prevent uncessary allocation of a lot o memory.
+        # maybe use float 32 dtype...    
         self._Space = self.setSpace()
         self._verticesFitness = self.initializeVerticesFitness()
-        self._Dij = 1/np.zeros((self._Space.shape[0], self._Space.shape[0])) #np.ones((self._Space.shape[0], self._Space.shape[0]))#
-        self._Pif = np.ones((self._Space.shape[0], self._Space.shape[0]))
-        self._Tij = np.ones((self._Space.shape[0], self._Space.shape[0]))
+        self._Dij = 1/np.zeros((self._Space.shape[0], self._Space.shape[0]), dtype=np.float32)
+        self._Pif = sparse.COO(np.ones((self._Space.shape[0], self._Space.shape[0]), dtype=np.float32))
+        self._Tij = sparse.COO(np.ones((self._Space.shape[0], self._Space.shape[0]), dtype=np.float32))
         
         self._antsVertice = np.random.choice(range(self._Space.shape[0]), size=self._antNumber)
         self._oldAntsVertice = np.zeros(self._antNumber, dtype=int)
@@ -142,7 +133,7 @@ class ACO(object):
         # Dij_notinf = Dij != sys.maxsize
         # Dij[Dij_inf] = Dij_notinf.max()
 
-        sumdeltaTij = np.zeros(Tij.shape)
+        sumdeltaTij = np.zeros(Tij.shape, dtype=np.float32)
 
         for kij in zip(last_Ants, Ants):
             sumdeltaTij[kij] += Q/Dij[kij]

@@ -58,7 +58,23 @@ def convertInt2BinaryList(number):
 
 def sarimax_serial_search(endo, exog_var_matrix, search=False, search_exog=False, pdq_ranges=[0,1,2], s_possibilities=[6,12,24,48],
                           param_default = (0, 1, 1), param_seasonal_default=(0,0,0,12)):
-    # TODO docstring.
+    """
+        endo_var: is the principal variable.
+        
+        exog_var_matrix: are a matrix of exogenous variables.
+        
+        search: True if want to make the search
+            
+        search_exog: True if want to search an arrange of exogenous matrix possibilities
+        
+        pdq_ranges: ranges to search for pdq and seasonal pdq parameters. E.G: pdq_ranges=[0,1,2].
+        
+        s_possibilites: list of S parameter possibilites. E.G: s_possibilities=[6,12,24,48].
+        
+        param_default: default pdq parameters tuple.
+        
+        param_seasonal_default: default seasonal parameters tuple.
+    """
     if search:
         p = d = q = pdq_ranges
         s = s_possibilities
@@ -109,24 +125,23 @@ def sarimax_serial_search(endo, exog_var_matrix, search=False, search_exog=False
     return best_model
 
 def sarimax_ACO_search(endo_var, exog_var_matrix, searchSpace, options_ACO, verbose=False):
-    # TODO put the standirze this docstring.
     """
-        endo_var - is the principal variable.
+        endo_var: is the principal variable.
         
-        exog_var_matrix - are a matrix of exogenous variables.
+        exog_var_matrix: are a matrix of exogenous variables.
         
-        searchSpace - is the space of search for the particles. EG:
+        searchSpace: is the space of search for the particles. EG:
             p = d = q = range(0, 2)
             sp = sd = sq = range(0, 2)
             s = [12,24,48] 
             qt_exog_variables = 4
             searchSpace = [p, d, q, sp, sd, sq, s, range(2**qt_exog_variables)]
             
-        pso_particles - is the number of particles.
+        pso_particles: is the number of particles.
         
-        pso_interations - is the number of interations.
+        pso_interations: is the number of interations.
         
-        options_ACO - parametrization for ACO algorithm. EG:
+        options_ACO: parametrization for ACO algorithm. EG:
             {'antNumber':2, 'antTours':1, 'alpha':2, 'beta':2, 'rho':0.5, 'Q':2}
     """
     def SARIMAX_aic(X, *args):
@@ -186,24 +201,20 @@ def sarimax_ACO_search(endo_var, exog_var_matrix, searchSpace, options_ACO, verb
     return results.predict()
 
 def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, verbose=False):
-    # TODO put the standirze this docstring.
+    # TODO convert PSO S searchspace to be a choice from an array of possibilities
     """
-        endo_var - is the principal variable.
+        endo_var: is the principal variable.
         
-        exog_var_matrix - are a matrix of exogenous variables.
+        exog_var_matrix: are a matrix of exogenous variables.
         
-        searchSpace - is the space of search for the particles. EG:
+        searchSpace: is the space of search for the particles. EG:
             p = d = q = range(0, 2)
             sp = sd = sq = range(0, 2)
             s = [12,24,48] 
             qt_exog_variables = 4
             searchSpace = [p, d, q, sp, sd, sq, s, qt_exog_variables]
-            
-        pso_particles - is the number of particles.
         
-        pso_interations - is the number of interations.
-        
-        options_PSO - are the options for pyswarm.single.LocalBestPSO object. EG:
+        options_PSO: are the options for pyswarm.single.LocalBestPSO object. EG:
             options_PSO = {'n_particles':10,'n_iterations':100,'c1': 0.5, 'c2': 0.3, 'w': 0.9, 'k': 3, 'p': 2}
     """
     def SARIMAX_aic_matrix(XX, **kwargs):
@@ -362,6 +373,8 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
         return_matrix = np.zeros(XX.shape)
         for Index, X  in enumerate(XX):
             pdqs = X[0:4].astype('int')
+            if pdqs[-1] < 0:
+                pdqs[-1] = 1
             exogenous_int_pos = X[-1]
             listPosb = convertInt2BinaryList(int(exogenous_int_pos))
             if len(listPosb) > 0:
@@ -394,7 +407,9 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
     options_PSO_GB = {'c1': options_PSO['c1'], 'c2': options_PSO['c1'],
                       'w': options_PSO['w'], 'k': options_PSO['k'], 'p': options_PSO['p']}
     
-    optimizer = ps.global_best.GlobalBestPSO(n_particles=options_PSO['n_particles'], dimensions=len(searchSpacePSO),
+    dimensions = len(searchSpacePSO)
+    print(dimensions)
+    optimizer = ps.global_best.GlobalBestPSO(n_particles=options_PSO['n_particles'], dimensions=dimensions,
                                              bounds=(min_boudaries, searchSpacePSO), options=options_PSO_GB)
 
     # Perform optimization
