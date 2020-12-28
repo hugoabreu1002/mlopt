@@ -196,7 +196,7 @@ def sarimax_ACO_search(endo_var, exog_var_matrix, searchSpace, options_ACO, verb
                                   enforce_stationarity=False, enforce_invertibility=False)
 
     results = mod.fit(disp=False)
-    print("BEST result: \n PDQ-parameters: {0} \n SPDQ-parameters: {1} \n Exgoneous Var: {2}".format(param, param_seasonal, listPosb))
+    print("BEST result: \n PDQ-parameters: {0} \n PDQS-parameters: {1} \n Exgoneous Var: {2}".format(param, param_seasonal, listPosb))
     
     return results.predict()
 
@@ -212,7 +212,7 @@ def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, verb
             sp = sd = sq = range(0, 2)
             s = [12,24,48] 
             qt_exog_variables = 4
-            searchSpace = [p, d, q, sp, sd, sq, s, qt_exog_variables]
+            searchSpace = [p, d, q, sp, sd, sq, s], exog possibilities are appended after
         
         options_PSO: are the options for pyswarm.single.LocalBestPSO object. EG:
             options_PSO = {'n_particles':10,'n_iterations':100,'c1': 0.5, 'c2': 0.3, 'w': 0.9, 'k': 3, 'p': 2}
@@ -220,16 +220,16 @@ def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, verb
     def SARIMAX_aic_matrix(XX, **kwargs):
         endo = kwargs['endo']
         exog = kwargs['exog']
+        S_parameter_posb = kwargs['S_parameter_posb']
         return_matrix = np.zeros(XX.shape[0])
+        
         for Index, X  in enumerate(XX):
             param = X[0:3].astype('int')
             param_seasonal = X[3:7].astype('int') 
-            if param_seasonal[-1] < 0:
-                param_seasonal[-1] = 1
-                
+            param_seasonal[-1] = S_parameter_posb[param_seasonal[-1]]
+            
             IntBinPos = int(X[-1])
             listPosb = convertInt2BinaryList(IntBinPos)
-            
             if len(listPosb) > 0:
                 true_exog = exog[:, listPosb]
             else:
@@ -242,6 +242,12 @@ def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, verb
             
         return return_matrix
 
+    # changes in S possibilites
+    S_parameter_posb = copy.copy(searchSpace[-1])
+    qt_s_posb = len(S_parameter_posb)
+    searchSpace[-1] = [0, qt_s_posb]
+    
+    # changes for exog possibilities
     print("Original search Space:", searchSpace)
     exogs_possibilites = range(0,2**exog_var_matrix.shape[1]) 
     searchSpace.append(exogs_possibilites)
@@ -263,13 +269,14 @@ def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, verb
                                              bounds=(min_boudaries, searchSpacePSO), options=options_PSO_GB)
 
     # Perform optimization
-    kwargs_pso = {'endo':endo_var, 'exog':exog_var_matrix}
+    kwargs_pso = {'endo':endo_var, 'exog':exog_var_matrix, 'S_parameter_posb':S_parameter_posb}
     stats = optimizer.optimize(SARIMAX_aic_matrix, iters=options_PSO['n_iterations'], verbose=verbose, **kwargs_pso)
     
     # return predicted array
     best_result = stats[1]
     param = best_result[0:3].astype('int')
     param_seasonal = best_result[3:7].astype('int')
+    param_seasonal[-1] = S_parameter_posb[param_seasonal[-1]]
     if param_seasonal[-1] < 0:
         param_seasonal[-1] = 1
     IntBinPos = int(best_result[-1])
@@ -364,6 +371,7 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
     """
     def sarimax_ACO_PDQ_search_MAPE(XX, **Allkwargs):
         kwargs = Allkwargs['kwargs']
+        S_parameter_posb = kwargs['S_parameter_posb']
         searchSpaceACO = kwargs['searchSpaceACO']
         endo = kwargs['endo']
         exog = kwargs['exog']
@@ -373,8 +381,7 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
         return_matrix = np.zeros(XX.shape)
         for Index, X  in enumerate(XX):
             pdqs = X[0:4].astype('int')
-            if pdqs[-1] < 0:
-                pdqs[-1] = 1
+            pdqs[-1] = S_parameter_posb[pdqs[-1]]
             exogenous_int_pos = X[-1]
             listPosb = convertInt2BinaryList(int(exogenous_int_pos))
             if len(listPosb) > 0:
@@ -390,6 +397,11 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
             return_matrix[Index] = MAPE(endo, y_sarimax)
             
         return return_matrix
+    
+    # changes in S possibilites
+    S_parameter_posb = copy.copy(searchSpace[-1])
+    qt_s_posb = len(S_parameter_posb)
+    searchSpace[-1] = [0, qt_s_posb]
     
     searchSpace = copy.copy(searchSpace)
     print("Original search Space:", searchSpace)
@@ -414,12 +426,13 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
 
     # Perform optimization
     searchSpaceACO = searchSpace[:3]
-    AllKwargs = {'kwargs': {'searchSpaceACO':searchSpaceACO, 'endo':endo_var, 'exog':exog_var_matrix,'verbose':verbose},
+    AllKwargs = {'kwargs': {'searchSpaceACO':searchSpaceACO, 'endo':endo_var, 'exog':exog_var_matrix,'verbose':verbose, 'S_parameter_posb':S_parameter_posb},
                  'options_ACO':options_ACO}
     
     stats = optimizer.optimize(sarimax_ACO_PDQ_search_MAPE, iters=options_PSO['n_iterations'],
                                verbose=verbose, **AllKwargs)
     
+    # TODO ver um jeito de retornar o valor todo para que o y_sariamx seja recuperado
     # best_result = stats[1]
     # param = best_result[0:3]
     # param_seasonal = best_result[3:]
