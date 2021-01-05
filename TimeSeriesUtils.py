@@ -5,6 +5,7 @@ import numpy as np
 import warnings
 import itertools
 import copy
+from pathlib import Path
 
 def MAPE(y_pred, y_true): 
     mask = y_true != 0
@@ -302,16 +303,13 @@ def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options
         
         endo_var: is the principal variable.
         
-        exog_var_matrix: - are a matrix of exogenous variables.
+        exog_var_matrix: is the matrix of exogenous variables.
         
         PDQS: list of pdqs parameters. EG: [1, 1, 1, 24].
         
         searchSpace: is the space of search for the particles. E.G.:
             p = d = q = range(0, 2)
-            sp = sd = sq = range(0, 2)
-            s = [12,24,48] 
-            qt_exog_variables = 4
-            searchSpace = [p, d, q, sp, sd, sq, s, range(2**qt_exog_variables)]
+            searchSpace = [p, d, q]
             
         pso_particles: is the number of particles.
         
@@ -342,7 +340,8 @@ def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options
     rho = options_ACO['rho']
     Q = options_ACO['Q']
     
-    print("Original search Space:", searchSpace)
+    if verbose:    
+        print("Original search Space:", searchSpace)
 
     warnings.filterwarnings("ignore") # specify to ignore warning messages
     ACOsearch = ACO(alpha, beta, rho, Q)
@@ -357,18 +356,36 @@ def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options
 
     results = mod.fit(disp=False)
 
-    return results.predict()
+    return results.predict(), best_result
 
 def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, options_ACO, verbose=False):
-    # TODO: test again, divide the work between ACO and PSO
-    """
+    """ 
         PCO - ACO Sariamx Search.
         It divides the tasks in two. PDQ Search is done by ACO. PDQS Search and Exogenous Variables searches is
         done by PSO.
         
+        endo_var: is the principal variable.
+        
+        exog_var_matrix: is the matrix of exogenous variables.
+        
+        searchSpace: is the space of search for the particles and ants. E.G.:
+            p = d = q = [0, 1] #range(0, 2)
+            sp = sd = sq = [0, 1] #range(0, 2)
+            s = [12,24] #como são dados horarios...
+            searchSpace = [p, d, q, sp, sd, sq, s]
+        
         options_PSO: is the options for all PSO parametrization. E.G.:
             options_PSO = {'n_particles':10,'n_iterations':100,'c1': 0.5, 'c2': 0.3, 'w': 0.9, 'k': 3, 'p': 2}
+        
+        options_ACO: parametrization for ACO algorithm. E.G.:
+            {'antNumber':2, 'antTours':1, 'alpha':2, 'beta':2, 'rho':0.5, 'Q':2}
     """
+    
+    # Path("resultados/").mkdir(parents=True, exist_ok=True)
+    # results_file = open("resultados/search")
+    
+    search_results = []
+    
     def sarimax_ACO_PDQ_search_MAPE(XX, **Allkwargs):
         kwargs = Allkwargs['kwargs']
         S_parameter_posb = kwargs['S_parameter_posb']
@@ -378,23 +395,25 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
         verbose = kwargs['verbose']
         options_ACO = Allkwargs['options_ACO']
         
-        return_matrix = np.zeros(XX.shape)
+        return_matrix = np.zeros(XX.shape[0])
         for Index, X  in enumerate(XX):
             pdqs = X[0:4].astype('int')
             pdqs[-1] = S_parameter_posb[pdqs[-1]]
-            exogenous_int_pos = X[-1]
-            listPosb = convertInt2BinaryList(int(exogenous_int_pos))
+            exogenous_int_pos = int(X[-1])
+            listPosb = convertInt2BinaryList(exogenous_int_pos)
             if len(listPosb) > 0:
                 true_exog = exog[:, listPosb]
             else:
                 true_exog = None
             
-            y_sarimax = sarimax_ACO_PDQ_search(endo_var=endo, exog_var_matrix=true_exog,
+            y_sarimax, pdq_param = sarimax_ACO_PDQ_search(endo_var=endo, exog_var_matrix=true_exog,
                                                PDQS=pdqs, searchSpace=searchSpaceACO,
                                                options_ACO=options_ACO,  verbose=verbose)
             
-            print(endo, y_sarimax)
-            return_matrix[Index] = MAPE(endo, y_sarimax)
+            mape_result = MAPE(endo, y_sarimax)
+            return_matrix[Index] = mape_result
+            
+            search_results.append((mape_result, pdq_param, pdqs, exogenous_int_pos))
             
         return return_matrix
     
@@ -429,21 +448,23 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
     AllKwargs = {'kwargs': {'searchSpaceACO':searchSpaceACO, 'endo':endo_var, 'exog':exog_var_matrix,'verbose':verbose, 'S_parameter_posb':S_parameter_posb},
                  'options_ACO':options_ACO}
     
-    stats = optimizer.optimize(sarimax_ACO_PDQ_search_MAPE, iters=options_PSO['n_iterations'],
+    optimizer.optimize(sarimax_ACO_PDQ_search_MAPE, iters=options_PSO['n_iterations'],
                                verbose=verbose, **AllKwargs)
     
-    # TODO ver um jeito de retornar o valor todo para que o y_sariamx seja recuperado
-    # best_result = stats[1]
-    # param = best_result[0:3]
-    # param_seasonal = best_result[3:]
-    # IntBinPos = int(best_result[-1])
-    # listPosb = convertInt2BinaryList(IntBinPos)
-    # if len(listPosb) > 0:
-    #     true_exog = exog_var_matrix[:, listPosb]
-    # else:
-    #     true_exog = None 
-    # mod = SARIMAX(endo_var, exog=true_exog, order=param, seasonal_order=param_seasonal, enforce_stationarity=False, enforce_invertibility=False)
+    global_best_result = sorted(search_results, key=lambda x: x[0])[-1]
+    
+    print("Global best result: ", global_best_result)
+    
+    param = global_best_result[1]
+    param_seasonal = global_best_result[2]
+    listPosb = convertInt2BinaryList(global_best_result[3])
+    
+    if len(listPosb) > 0:
+        true_exog = exog_var_matrix[:, listPosb]
+    else:
+        true_exog = None 
+    mod = SARIMAX(endo_var, exog=true_exog, order=param, seasonal_order=param_seasonal, enforce_stationarity=False, enforce_invertibility=False)
 
-    # results = mod.fit(disp=False)
+    results = mod.fit(disp=False)
 
-    # return results.predict()
+    return results.predict()

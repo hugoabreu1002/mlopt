@@ -9,7 +9,7 @@ import random
 from tqdm import tqdm
 
 class AGMLP_Residual:
-    
+    # TODO documentar
     def __init__(self, data, y_sarimax, num_epochs = 10, size_pop=10, prob_mut=0.5, tr_ts_percents=[80,20], alpha_stop=1e-4):
         
         self._data = data

@@ -50,11 +50,11 @@ class ACO(object):
     
     def setSpace(self):
         """
-        Dimentions_Ranges: is a list of ranges. E.g:
-            p = d = q = range(0, 2)
-            Dimentions_Ranges = [p, d, q]
-            
-        The vertices of the graph will be a line of Space
+            Dimentions_Ranges: is a list of ranges. E.g:
+                p = d = q = range(0, 2)
+                Dimentions_Ranges = [p, d, q]
+                
+            The vertices of the graph will be a line of Space
         """
         print("dimentions Ranges passed: ", self._dimentionsRanges)
         Space = np.array(list(it.product(*self._dimentionsRanges)), dtype = np.int)
@@ -80,14 +80,14 @@ class ACO(object):
     
     def updateDij(self, Dij, verbose=False):
         """
-        Dij and Pij will be only the matrix for the current possibilities
-        Tij will be the pherormonen matrix for the whole graph
-        
-        fitnessFunction - lesser the better, so a good path should, Cj lesser than Ci
-        Dij_ij = Exp((Cj-Ci)/Ci) + max 10% random
-        Dij_ji = Exp((Ci-Cj)/Cj) + max 10% random
-        
-        the random idea is like the ants cant get the distance perfectly
+            Dij and Pij will be only the matrix for the current possibilities
+            Tij will be the pherormonen matrix for the whole graph
+            
+            fitnessFunction - lesser the better, so a good path should, Cj lesser than Ci
+            Dij_ij = Exp((Cj-Ci)/Ci) + max 10% random
+            Dij_ji = Exp((Ci-Cj)/Cj) + max 10% random
+            
+            the random idea is like the ants cant get the distance perfectly
         """
         #TODO revisar essa lógica do update da matriz Dij, pq a busca deve ser feita boa com a menor quantidade possível de formigas.
         for k_ant in range(self._antNumber):
@@ -191,11 +191,15 @@ class ACO(object):
                                           
     def optimize(self, antNumber, antTours, dimentionsRanges, function, functionArgs=[], verbose=False):
         """
-        antNumber : Number of ants
-        antTours : Number of tours each ant will make on the graph
-        dimentionsRanges : Dimentions of the Graph, [[x1_min:x1_max],[x2_1, x2_2, x2_3, ...],...]
-        function : function to be optimized
-        functionArgs : *args of the function
+            antNumber : Number of ants
+            
+            antTours : Number of tours each ant will make on the graph
+            
+            dimentionsRanges : Dimentions of the Graph, [[x1_min:x1_max],[x2_1, x2_2, x2_3, ...],...]
+            
+            function : function to be optimized
+            
+            functionArgs : *args of the function
         """
         self._antNumber = antNumber
         self._antTours = antTours

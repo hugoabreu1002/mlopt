@@ -10,7 +10,7 @@ import random
 from tqdm import tqdm
 
 class AGMLP_VR_Residual(AGMLP_Residual):
-
+    # TODO Documentar
     def set_fitness(self, population, start_set_fit): 
         print('start_set_fit:', start_set_fit)
         
