@@ -7,7 +7,6 @@ from tqdm import tqdm
 from sklearn.ensemble import VotingRegressor
 
 class AgMlp:
-
     def __init__(self,X_train, y_train, X_test, y_test, num_generations, size_population, prob_mut, alpha_stop=1e-4):
         self._X_train = X_train
         self._y_train = y_train
@@ -35,7 +34,6 @@ class AgMlp:
         return population
 
     def set_fitness_and_sort(self, population, start_set_fit):
-        print("len poulation {0}".format(len(population)))
         for i in range(start_set_fit, len(population)):
             mlp_volatil = MLPRegressor(hidden_layer_sizes=(population[i][1], population[i][2], population[i][3]),
                                     activation = population[i][4], solver = population[i][0],
@@ -55,7 +53,7 @@ class AgMlp:
         qt_cross = len(population[0])
         pop_ori = population
         for p in range(1, len(pop_ori)):
-            if np.random.rand() > self._prob_mut:
+            if np.random.rand() > (1 - self._prob_mut):
                 population[p][0:int(qt_cross/2)] = pop_ori[int(p/2)][0:int(qt_cross/2)]
                 population[p][int(qt_cross/2):qt_cross] = pop_ori[int(p/2)][int(qt_cross/2):qt_cross]
 
@@ -63,7 +61,7 @@ class AgMlp:
 
     def mutation(self, population):
         for p in range(1, len(population)):
-            if np.random.rand() > self._prob_mut:
+            if np.random.rand() > (1 - self._prob_mut):
                 population[p][1] = population[p][1] + np.random.randint(1,10)
                 population[p][2] = population[p][2] + np.random.randint(1,5)
                 population[p][3] = population[p][3] + np.random.randint(1,2)

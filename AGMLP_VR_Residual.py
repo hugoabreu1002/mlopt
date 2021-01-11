@@ -11,6 +11,46 @@ from tqdm import tqdm
 
 class AGMLP_VR_Residual(AGMLP_Residual):
     # TODO Documentar
+    def gen_population(self):
+        """
+            Generates the population. 
+            The population is a list of lists where every element in the inner list corresponds to:
+            [lag_residue_regression, lag_original_sarimax_association, lag_estimated_residue, forecast_estimated_residue
+            , 'object_resiue_regression', 'percentage_of_mlps, 'object_association', fitness]
+            
+            The lags and forecast variables are token from a uniform distribution from 1 to 20.
+        """
+        population = [[1,1,1,1,1,'objeto_erro','objeto_ass',np.inf]]*self._size_pop
+        for i in range(0, self._size_pop):
+            population[i] = [random.randint(1, 20), random.randint(1, 20),  random.randint(1, 20), random.randint(1, 20), random.randint(1, 100), 'objeto_erro', 'objeto_ass', 10]
+        
+        return population
+
+    def mutation(self, population):
+        for p in range(1, len(population)):
+            if np.random.rand() > self._prob_mut:
+                population[p][0] = population[p][0] + np.random.randint(-2, 2)
+                if population[p][0] <= 0:
+                    population[p][0] = 1
+                
+                population[p][1] = population[p][1] + np.random.randint(-2, 2)
+                if population[p][1] <= 0:
+                    population[p][1] = 1
+                
+                population[p][2] = population[p][2] + np.random.randint(-2, 2)
+                if population[p][2] <= 0:
+                    population[p][2] = 1
+                
+                population[p][3] = population[p][3] + np.random.randint(-2, 2)
+                if population[p][3] <= 0:
+                    population[p][3] = 1
+                    
+                population[p][4] = population[p][3] + np.random.randint(-10, 10)
+                if population[p][4] <= 0:
+                    population[p][4] = 10
+
+        return population
+    
     def set_fitness(self, population, start_set_fit): 
         print('start_set_fit:', start_set_fit)
         
@@ -20,9 +60,7 @@ class AGMLP_VR_Residual(AGMLP_Residual):
                 self._erro, population[i][0])
             
             #AG_erro
-            percent_VR_heuristic = sum(population[i][0:4])/2 # population[i][0:5] são parâmetros da população, sendo cada um número entre 0 e 20 na média.
-            if percent_VR_heuristic > 50:
-                percent_VR_heuristic = 50
+            percent_VR_heuristic = population[i][4]
             
             VR_mlps_erro = Ag_mlp(erro_train_entrada, erro_train_saida, erro_test_entrada, erro_test_saida, self._num_epochs,
                                     self._size_pop, self._prob_mut).return_VotingRegressor(percent_VR_heuristic)
@@ -42,8 +80,8 @@ class AGMLP_VR_Residual(AGMLP_Residual):
                                      self._size_pop, self._prob_mut).return_VotingRegressor(percent_VR_heuristic)
             
             
-            population[i][4] = VR_mlps_erro
-            population[i][5] = VR_mlps_ass
+            population[i][-3] = VR_mlps_erro
+            population[i][-2] = VR_mlps_ass
             population[i][-1] = mae(VR_mlps_ass.VR_predict(X_in_test), self._data_test)
 
         return population
