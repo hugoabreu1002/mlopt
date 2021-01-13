@@ -12,7 +12,18 @@ def MAPE(y_pred, y_true):
     return (np.fabs(y_true - y_pred)/y_true)[mask].mean()
 
 def train_test_split(serie, num_lags, tr_vd_ts_percents = [80, 20], print_shapes = False):
-    # TODO docstring.
+    """
+        Slipts a time series to train and test Data.
+        X data are data num_lags behind y data.
+        
+        serie : is the time serie data
+        
+        num_lags : quantity of data behind y data
+        
+        tr_vd_ts_percents : divistion percentages
+        
+        print_shapes : True chose to print final shapes. Default is False.
+    """
     len_serie = len(serie)
     X = np.zeros((len_serie, num_lags))
     y = np.zeros((len_serie,1))
@@ -32,7 +43,20 @@ def train_test_split(serie, num_lags, tr_vd_ts_percents = [80, 20], print_shapes
     return X_train, y_train, X_test, y_test
 
 def train_test_split_prev(serie, num_lags_pass, num_lags_fut, tr_vd_ts_percents = [80, 20], print_shapes = False):
-    # TODO docstring.
+    """
+        Slipts a time series to train and test Data.
+        X data are data num_lags_pass behind and num_lags_fut ahead y data.
+        
+        serie : is the time serie data
+        
+        num_lags_pass : quantity of data behind y data
+        
+        num_lags_fut : quantity of data ahead y data
+        
+        tr_vd_ts_percents : divistion percentages
+        
+        print_shapes : True chose to print final shapes. Default is False.
+    """
     len_serie = len(serie)
     X = np.zeros((len_serie, (num_lags_pass+num_lags_fut)))
     y = np.zeros((len_serie,1))

@@ -47,6 +47,10 @@ class AGMLP_Residual:
         return to_break
         
     def train_test_split(self, serie, num_lags, print_shapes = False):
+        """
+            Slipts a time series to train and test Data.
+            X data are data num_lags behind y data.
+        """
         len_serie = len(serie)
         X = np.zeros((len_serie, num_lags))
         y = np.zeros((len_serie,1))
@@ -66,6 +70,10 @@ class AGMLP_Residual:
         return X_train, y_train, X_test, y_test
 
     def train_test_split_prev(self, serie, num_lags_pass, num_lags_fut, print_shapes = False):
+        """
+            Slipts a time series to train and test Data.
+            X data are data num_lags_pass behind and num_lags_fut ahead y data.
+        """
         len_serie = len(serie)
         X = np.zeros((len_serie, (num_lags_pass+num_lags_fut)))
         y = np.zeros((len_serie,1))
@@ -109,8 +117,7 @@ class AGMLP_Residual:
                 self._erro, population[i][0])
             
             #AG_erro
-            Ag_mlp_erro = Ag_mlp(
-                erro_train_entrada, erro_train_saida, erro_test_entrada, erro_test_saida, self._num_epochs,
+            Ag_mlp_erro = Ag_mlp(erro_train_entrada, erro_train_saida, erro_test_entrada, erro_test_saida, self._num_epochs,
                 self._size_pop, self._prob_mut).search_best_individual()
             best_erro = Ag_mlp_erro._best_of_all
             
