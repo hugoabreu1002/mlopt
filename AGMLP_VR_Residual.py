@@ -67,11 +67,11 @@ class AGMLP_VR_Residual(AGMLP_Residual):
 
             erro_estimado = np.concatenate([VR_mlps_erro.VR_predict(erro_train_entrada), VR_mlps_erro.VR_predict(erro_test_entrada)])
 
-            #obter o y estimado
+            #obtain o y_hat. In thtat case only X data is needed from train_test_split and train_test_split_prev methods
             X_ass_1_train_in, _, X_ass_1_test_in, _ = self.train_test_split(self._y_sarimax, population[i][1])
             X_ass_2_train_in, _, X_ass_2_test_in, _ = self.train_test_split_prev(erro_estimado, population[i][2],
                                                                                  population[i][3])
-
+            #concatanates the X data for training
             X_in_train = np.concatenate((X_ass_1_train_in, X_ass_2_train_in), axis=1)
             X_in_test = np.concatenate((X_ass_1_test_in, X_ass_2_test_in), axis=1) 
             
@@ -79,7 +79,7 @@ class AGMLP_VR_Residual(AGMLP_Residual):
             VR_mlps_ass = Ag_mlp(X_in_train, self._data_train, X_in_test, self._data_test, self._num_epochs,
                                      self._size_pop, self._prob_mut).return_VotingRegressor(percent_VR_heuristic)
             
-            
+            #save the models and MAE fitness
             population[i][-3] = VR_mlps_erro
             population[i][-2] = VR_mlps_ass
             population[i][-1] = mae(VR_mlps_ass.VR_predict(X_in_test), self._data_test)
