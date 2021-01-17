@@ -79,7 +79,7 @@ class AGMLP_VR_Residual(AGMLP_Residual):
             VR_mlps_ass = Ag_mlp(X_in_train, self._data_train, X_in_test, self._data_test, self._num_epochs,
                                      self._size_pop, self._prob_mut).return_VotingRegressor(percent_VR_heuristic)
             
-            #save the models and MAE fitness
+            #save the models and MAE fitness 
             population[i][-3] = VR_mlps_erro
             population[i][-2] = VR_mlps_ass
             population[i][-1] = mae(VR_mlps_ass.VR_predict(X_in_test), self._data_test)

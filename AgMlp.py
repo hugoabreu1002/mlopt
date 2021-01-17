@@ -7,6 +7,11 @@ from tqdm import tqdm
 from sklearn.ensemble import VotingRegressor
 
 class AgMlp:
+    """
+        Possible Upgrade in the future is to use number of hidden layer variable  
+        and to use specifics parameters that depends on the solver and learning_rate:
+        https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPRegressor.html
+    """
     def __init__(self,X_train, y_train, X_test, y_test, num_generations, size_population, prob_mut, alpha_stop=1e-4):
         self._X_train = X_train
         self._y_train = y_train
@@ -22,9 +27,14 @@ class AgMlp:
         self._n_voting_mlps = None
     
     def gen_population(self):
+        """
+            Generates the population, which is a list of lists.
+            Every individual (list) is composed by [solver, first hidden layer, second hidden layer,
+            third hidden layer, activation function, learning rate]
+        """
         sizepop=self._size_population
         population = [['']]*sizepop
-        solver = ['lbfgs', 'adam']
+        solver = ['lbfgs', 'adam', 'sgd']
         activation = ['identity', 'logistic', 'tanh', 'relu']
         learning_rate = ['constant', 'invscaling', 'adaptive']
         for i in range(0, sizepop):
@@ -37,7 +47,7 @@ class AgMlp:
         for i in range(start_set_fit, len(population)):
             mlp_volatil = MLPRegressor(hidden_layer_sizes=(population[i][1], population[i][2], population[i][3]),
                                     activation = population[i][4], solver = population[i][0],
-                                    learning_rate = population[i][5], max_iter = 500)
+                                    learning_rate = population[i][5], max_iter = 500, early_stopping=True)
             #qt_fits=0
             mlp_volatil.fit(self._X_train, self._y_train)
             mae_fits= mae(self._y_test, mlp_volatil.predict(self._X_test))
