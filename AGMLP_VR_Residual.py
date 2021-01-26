@@ -15,8 +15,8 @@ class AGMLP_VR_Residual(AGMLP_Residual):
         """
             Generates the population. 
             The population is a list of lists where every element in the inner list corresponds to:
-            [lag_residue_regression, lag_original_sarimax_association, lag_estimated_residue, forecast_estimated_residue
-            , 'object_resiue_regression', 'percentage_of_mlps, 'object_association', fitness]
+            [lag_residue_regression, lag_original_sarimax_association, lag_estimated_residue, forecast_estimated_residue,
+            'percentage_of_mlps', 'object_resiue_regression', 'object_association', fitness]
             
             The lags and forecast variables are token from a uniform distribution from 1 to 20.
         """

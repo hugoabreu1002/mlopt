@@ -119,7 +119,7 @@ def sarimax_serial_search(endo, exog_var_matrix, search=False, search_exog=False
         warnings.filterwarnings("ignore") # specify to ignore warning messages
 
         best_model = None
-        best_AIC = np.inf 
+        best_AICc = np.inf 
 
         for param in pdq:
             if any(param) !=0:
@@ -131,11 +131,11 @@ def sarimax_serial_search(endo, exog_var_matrix, search=False, search_exog=False
                                         enforce_stationarity=False, enforce_invertibility=False)
 
                             results = mod.fit(disp=False)
-                            print('ARIMA {0}, S {1}, Exog {2} - AIC:{3}'.format(param, param_seasonal, exog_chosen, results.aic))
-                            if results.aic < best_AIC:
-                                best_AIC = results.aic
+                            print('ARIMA {0}, S {1}, Exog {2} - AICc:{3}'.format(param, param_seasonal, exog_chosen, results.aicc))
+                            if results.aicc < best_AICc:
+                                best_AICc = results.aicc
                                 best_model = results.predict()
-                                print('BEST: ', best_AIC, param, param_seasonal)
+                                print('BEST: ', best_AICc, param, param_seasonal)
                         except:
                             continue
     
@@ -144,7 +144,7 @@ def sarimax_serial_search(endo, exog_var_matrix, search=False, search_exog=False
                       enforce_stationarity=False,enforce_invertibility=False)
         
         results = mod.fit(disp=True)
-        print('ARIMA{}, x{} - AIC:{}'.format(param_default, param_seasonal_default, results.aic))
+        print('ARIMA{}, x{} - AICc:{}'.format(param_default, param_seasonal_default, results.aicc))
         best_model = results.predict()
 
     return best_model
@@ -169,7 +169,7 @@ def sarimax_ACO_search(endo_var, exog_var_matrix, searchSpace, options_ACO, verb
         options_ACO: parametrization for ACO algorithm. EG:
             {'antNumber':2, 'antTours':1, 'alpha':2, 'beta':2, 'rho':0.5, 'Q':2}
     """
-    def SARIMAX_aic(X, *args):
+    def SARIMAX_aicc(X, *args):
         endo = args[0][0]
         exog = args[0][1]
         param = X[0:3]
@@ -187,7 +187,7 @@ def sarimax_ACO_search(endo_var, exog_var_matrix, searchSpace, options_ACO, verb
 
         results = mod.fit(disp=False)
             
-        return results.aic
+        return results.aicc
     
     antNumber = options_ACO['antNumber']
     antTours = options_ACO['antTours']
@@ -205,7 +205,7 @@ def sarimax_ACO_search(endo_var, exog_var_matrix, searchSpace, options_ACO, verb
     warnings.filterwarnings("ignore") # specify to ignore warning messages
     ACOsearch = ACO(alpha, beta, rho, Q)
 
-    best_result, _ = ACOsearch.optimize(antNumber, antTours, dimentionsRanges=X, function=SARIMAX_aic,
+    best_result, _ = ACOsearch.optimize(antNumber, antTours, dimentionsRanges=X, function=SARIMAX_aicc,
                                         functionArgs=[endo_var, exog_var_matrix],  verbose=verbose)
    
     param = best_result[0:3]
@@ -242,7 +242,7 @@ def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, verb
         options_PSO: are the options for pyswarm.single.LocalBestPSO object. EG:
             options_PSO = {'n_particles':10,'n_iterations':100,'c1': 0.5, 'c2': 0.3, 'w': 0.9, 'k': 3, 'p': 2}
     """
-    def SARIMAX_aic_matrix(XX, **kwargs):
+    def SARIMAX_AICc_matrix(XX, **kwargs):
         endo = kwargs['endo']
         exog = kwargs['exog']
         S_parameter_posb = kwargs['S_parameter_posb']
@@ -263,7 +263,7 @@ def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, verb
             mod = SARIMAX(endo, exog=true_exog, order=param, seasonal_order=param_seasonal, enforce_stationarity=False, enforce_invertibility=False)
 
             results = mod.fit(disp=False)
-            return_matrix[Index] = results.aic
+            return_matrix[Index] = results.aicc
             
         return return_matrix
 
@@ -295,7 +295,7 @@ def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, verb
 
     # Perform optimization
     kwargs_pso = {'endo':endo_var, 'exog':exog_var_matrix, 'S_parameter_posb':S_parameter_posb}
-    stats = optimizer.optimize(SARIMAX_aic_matrix, iters=options_PSO['n_iterations'], verbose=verbose, **kwargs_pso)
+    stats = optimizer.optimize(SARIMAX_AICc_matrix, iters=options_PSO['n_iterations'], verbose=verbose, **kwargs_pso)
     
     # return predicted array
     best_result = stats[1]
@@ -342,7 +342,7 @@ def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options
         options_ACO: parametrization for ACO algorithm. E.G.:
             {'antNumber':2, 'antTours':1, 'alpha':2, 'beta':2, 'rho':0.5, 'Q':2}
     """
-    def SARIMAX_aic(X, *args):
+    def SARIMAX_AICc(X, *args):
         endo = args[0][0]
         exog = args[0][1]
         param_seasonal = args[0][2]
@@ -355,7 +355,7 @@ def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options
 
         results = mod.fit(disp=False)
             
-        return results.aic
+        return results.aicc
     
     antNumber = options_ACO['antNumber']
     antTours = options_ACO['antTours']
@@ -369,7 +369,7 @@ def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options
 
     warnings.filterwarnings("ignore") # specify to ignore warning messages
     ACOsearch = ACO(alpha, beta, rho, Q)
-    best_result, _ = ACOsearch.optimize(antNumber, antTours, dimentionsRanges=searchSpace, function=SARIMAX_aic,
+    best_result, _ = ACOsearch.optimize(antNumber, antTours, dimentionsRanges=searchSpace, function=SARIMAX_AICc,
                                         functionArgs=[endo_var, exog_var_matrix, PDQS],  verbose=verbose)
     
     print("BEST result: ", best_result)
