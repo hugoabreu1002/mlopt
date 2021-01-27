@@ -226,7 +226,6 @@ def sarimax_ACO_search(endo_var, exog_var_matrix, searchSpace, options_ACO, verb
     return results.predict()
 
 def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, verbose=False):
-    # TODO convert PSO S searchspace to be a choice from an array of possibilities
     """
         endo_var: is the principal variable.
         
