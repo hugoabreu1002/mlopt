@@ -190,6 +190,7 @@ def sarimax_ACO_search(endo_var, exog_var_matrix, searchSpace, options_ACO, verb
             aicc = results.aicc
         except:
             aicc = np.inf
+            pass
 
         return aicc
     
@@ -269,6 +270,7 @@ def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, verb
                 aicc = results.aicc
             except:
                 aicc = np.inf
+                pass
                 
             return_matrix[Index] = results.aicc
             
@@ -364,6 +366,7 @@ def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options
             aicc = results.aicc
         except:
             aicc = np.inf
+            pass
 
         return aicc
     
