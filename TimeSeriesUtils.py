@@ -185,9 +185,13 @@ def sarimax_ACO_search(endo_var, exog_var_matrix, searchSpace, options_ACO, verb
         mod = SARIMAX(endo, exog=true_exog, order=param, seasonal_order=param_seasonal,
                                     enforce_stationarity=False, enforce_invertibility=False)
 
-        results = mod.fit(disp=False)
-            
-        return results.aicc
+        try:
+            results = mod.fit(disp=False)
+            aicc = results.aicc
+        except:
+            aicc = np.inf
+
+        return aicc
     
     antNumber = options_ACO['antNumber']
     antTours = options_ACO['antTours']
@@ -260,8 +264,12 @@ def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, verb
                 true_exog = None
                 
             mod = SARIMAX(endo, exog=true_exog, order=param, seasonal_order=param_seasonal, enforce_stationarity=False, enforce_invertibility=False)
-
-            results = mod.fit(disp=False)
+            try:
+                results = mod.fit(disp=False)
+                aicc = results.aicc
+            except:
+                aicc = np.inf
+                
             return_matrix[Index] = results.aicc
             
         return return_matrix
@@ -348,13 +356,16 @@ def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options
         param = X[0:3]
         if param_seasonal[-1] < 0:
             param_seasonal[-1] = 1
-            
-        mod = SARIMAX(endo, exog=exog, order=param, seasonal_order=param_seasonal,
-                                    enforce_stationarity=False, enforce_invertibility=False)
 
-        results = mod.fit(disp=False)
-            
-        return results.aicc
+        try:    
+            mod = SARIMAX(endo, exog=exog, order=param, seasonal_order=param_seasonal,
+                                    enforce_stationarity=False, enforce_invertibility=False)
+            results = mod.fit(disp=False)
+            aicc = results.aicc
+        except:
+            aicc = np.inf
+
+        return aicc
     
     antNumber = options_ACO['antNumber']
     antTours = options_ACO['antTours']
