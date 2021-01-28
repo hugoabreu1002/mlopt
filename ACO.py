@@ -56,10 +56,9 @@ class ACO(object):
                 
             The vertices of the graph will be a line of Space
         """
-        print("dimentions Ranges passed: ", self._dimentionsRanges)
+
         Space = np.array(list(it.product(*self._dimentionsRanges)), dtype = np.int)
-        print("Space Created: ", Space)
-        print("number of Space Possibilities (rows): ", Space.shape[0])
+
         return Space    
     
     def initializeVerticesFitness(self):
@@ -205,8 +204,12 @@ class ACO(object):
         self._dimentionsRanges = dimentionsRanges
         self.fitnessFunction = function
         self._fitnessFunctionArgs = functionArgs
-
         self.initializeMatricesAndAntsPosition()
+
+        if verbose:
+            print("dimentions Ranges passed: ", self._dimentionsRanges)
+            print("Space Created: ", self._Space)
+            print("number of Space Possibilities (rows): ", self._Space.shape[0])
         
         for it in tqdm(range(self._antTours)):
             self._Dij = self.updateDij(self._Dij, verbose)
