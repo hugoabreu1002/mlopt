@@ -185,11 +185,11 @@ def sarimax_ACO_search(endo_var, exog_var_matrix, searchSpace, options_ACO, verb
         mod = SARIMAX(endo, exog=true_exog, order=param, seasonal_order=param_seasonal,
                                     enforce_stationarity=False, enforce_invertibility=False)
 
+        aicc = np.inf
         try:
             results = mod.fit(disp=False)
             aicc = results.aicc
         except:
-            aicc = np.inf
             pass
 
         return aicc
@@ -265,14 +265,14 @@ def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, verb
                 true_exog = None
                 
             mod = SARIMAX(endo, exog=true_exog, order=param, seasonal_order=param_seasonal, enforce_stationarity=False, enforce_invertibility=False)
+            aicc = np.inf
             try:
                 results = mod.fit(disp=False)
                 aicc = results.aicc
             except:
-                aicc = np.inf
                 pass
                 
-            return_matrix[Index] = results.aicc
+            return_matrix[Index] = aicc
             
         return return_matrix
 
@@ -359,13 +359,14 @@ def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options
         if param_seasonal[-1] < 0:
             param_seasonal[-1] = 1
 
-        try:    
-            mod = SARIMAX(endo, exog=exog, order=param, seasonal_order=param_seasonal,
+          
+        mod = SARIMAX(endo, exog=exog, order=param, seasonal_order=param_seasonal,
                                     enforce_stationarity=False, enforce_invertibility=False)
+        aicc = np.inf
+        try:  
             results = mod.fit(disp=False)
             aicc = results.aicc
         except:
-            aicc = np.inf
             pass
 
         return aicc
