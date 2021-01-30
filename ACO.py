@@ -242,10 +242,7 @@ class ACO(object):
 
         self._allBest = self._Space[np.argmin(self._verticesFitness)]
         self._allBestFitness = self._verticesFitness.min()
-        print("All Best Response")
-        print(self._allBest)
-        print("All Best Response Fitness")
-        print(self._allBestFitness)
+        print("ACO-All Best Response: {0}. Fitness: {1}".format(self._allBest, self._allBestFitness))
 
         self._ants_History = list(filter(lambda x: not x is None, self._ants_History))
 

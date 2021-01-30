@@ -386,7 +386,7 @@ def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options
     best_result, _ = ACOsearch.optimize(antNumber, antTours, dimentionsRanges=searchSpace, function=SARIMAX_AICc,
                                         functionArgs=[endo_var, exog_var_matrix, PDQS],  verbose=verbose)
     
-    print("BEST result: ", best_result)
+    print("BEST result: {0}.".format(best_result))
     param = best_result
     param_seasonal = PDQS
     mod = SARIMAX(endo_var, exog=exog_var_matrix, order=param, seasonal_order=param_seasonal,
@@ -419,9 +419,6 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
             {'antNumber':2, 'antTours':1, 'alpha':2, 'beta':2, 'rho':0.5, 'Q':2}
     """
     
-    # Path("resultados/").mkdir(parents=True, exist_ok=True)
-    # results_file = open("resultados/search")
-    
     search_results = []
     
     def sarimax_ACO_PDQ_search_MAPE(XX, **Allkwargs):
@@ -444,6 +441,7 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
             else:
                 true_exog = None
             
+            print("ACO Search will start with PDQS: {0}".format(pdqs))
             y_sarimax, pdq_param = sarimax_ACO_PDQ_search(endo_var=endo, exog_var_matrix=true_exog,
                                                PDQS=pdqs, searchSpace=searchSpaceACO,
                                                options_ACO=options_ACO,  verbose=verbose)
@@ -491,11 +489,11 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
     
     global_best_result = sorted(search_results, key=lambda x: x[0])[-1]
     
-    print("Global best result: ", global_best_result)
-    
     param = global_best_result[1]
     param_seasonal = global_best_result[2]
     listPosb = convertInt2BinaryList(global_best_result[3])
+    
+    print("Global best result: pdq={0}, pdqs={1}, X={2}".format(param, param_seasonal, listPosb))
     
     if len(listPosb) > 0:
         true_exog = exog_var_matrix[:, listPosb]
