@@ -6,6 +6,18 @@ import warnings
 import itertools
 import copy
 from pathlib import Path
+import logging
+from logging.handlers import RotatingFileHandler
+
+consoleInfo = logging.StreamHandler()
+consoleInfo.setLevel(logging.INFO)
+formatter = logging.Formatter("%(asctime)s: %(levelname)s - %(message)s")
+consoleInfo.setFormatter(formatter)
+logging.getLogger('').addHandler(consoleInfo)
+rotatingHandler = RotatingFileHandler(filename='timeSeriesUtils.log', encoding=None, mode='a', maxBytes=5*1024*1024, 
+                                 backupCount=2, delay=0)
+rotatingHandler.setLevel(logging.INFO)
+logging.getLogger('').addHandler(rotatingHandler)
 
 def MAPE(y_pred, y_true): 
     mask = y_true != 0
@@ -111,7 +123,7 @@ def sarimax_serial_search(endo, exog_var_matrix, search=False, search_exog=False
         else:
             exogs_possibilites = np.ones(exog_var_matrix.shape[1], 1)
             
-        print(exogs_possibilites)
+        logging.info(exogs_possibilites)
 
         # Generate all different combinations of seasonal p, q and q triplets
         seasonal_pdq = [(x[0], x[1], x[2], x[3]) for x in list(itertools.product(p, d, q, s))]
@@ -131,11 +143,11 @@ def sarimax_serial_search(endo, exog_var_matrix, search=False, search_exog=False
                                         enforce_stationarity=False, enforce_invertibility=False)
 
                             results = mod.fit(disp=False)
-                            print('ARIMA {0}, S {1}, Exog {2} - AICc:{3}'.format(param, param_seasonal, exog_chosen, results.aicc))
+                            logging.info("ARIMA {0}, S {1}, Exog {2} - AICc:{3}".format(param, param_seasonal, exog_chosen, results.aicc))
                             if results.aicc < best_AICc:
                                 best_AICc = results.aicc
                                 best_model = results.predict()
-                                print('BEST: ', best_AICc, param, param_seasonal)
+                                logging.info("BEST - AICc: {0} param: {1} param_seasonal: {2}".format(best_AICc, param, param_seasonal))
                         except:
                             continue
     
@@ -144,7 +156,7 @@ def sarimax_serial_search(endo, exog_var_matrix, search=False, search_exog=False
                       enforce_stationarity=False,enforce_invertibility=False)
         
         results = mod.fit(disp=True)
-        print('ARIMA{}, x{} - AICc:{}'.format(param_default, param_seasonal_default, results.aicc))
+        logging.info('ARIMA{}, x{} - AICc:{}'.format(param_default, param_seasonal_default, results.aicc))
         best_model = results.predict()
 
     return best_model
@@ -201,10 +213,10 @@ def sarimax_ACO_search(endo_var, exog_var_matrix, searchSpace, options_ACO, verb
     rho = options_ACO['rho']
     Q = options_ACO['Q']
     
-    print("Original search Space:", searchSpace)
+    logging.info("Original search Space: {0}".format(searchSpace))
     exogs_possibilites = range(0,2**exog_var_matrix.shape[1]) 
     searchSpace.append(exogs_possibilites)
-    print("search Space with Exog Possibilities: ", searchSpace)
+    logging.info("search Space with Exog Possibilities: {0}".format(searchSpace))
     
     X = searchSpace
     warnings.filterwarnings("ignore") # specify to ignore warning messages
@@ -226,7 +238,7 @@ def sarimax_ACO_search(endo_var, exog_var_matrix, searchSpace, options_ACO, verb
                                   enforce_stationarity=False, enforce_invertibility=False)
 
     results = mod.fit(disp=False)
-    print("BEST result: \n PDQ-parameters: {0} \n PDQS-parameters: {1} \n Exgoneous Var: {2}".format(param, param_seasonal, listPosb))
+    logging.info("BEST result: \n PDQ-parameters: {0} \n PDQS-parameters: {1} \n Exgoneous Var: {2}".format(param, param_seasonal, listPosb))
     
     return results.predict()
 
@@ -282,20 +294,20 @@ def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, verb
     searchSpace[-1] = [0, qt_s_posb]
     
     # changes for exog possibilities
-    print("Original search Space:", searchSpace)
+    logging.info("Original search Space:", searchSpace)
     exogs_possibilites = range(0,2**exog_var_matrix.shape[1]) 
     searchSpace.append(exogs_possibilites)
-    print("search Space with Exog Possibilities: ", searchSpace)
+    logging.info("search Space with Exog Possibilities: {0}".format(searchSpace))
     
     searchSpacePSO = list(map(lambda L: max(L), searchSpace))
     min_boudaries = np.zeros(len(searchSpacePSO))
-    print("PSO boundaries: ", min_boudaries, searchSpacePSO)
+    logging.info("PSO boundaries: {0} {1}".format(min_boudaries, searchSpacePSO))
     
     rows = 1
     for d in searchSpacePSO:
         rows = d*rows
 
-    print("number of Space Possibilities (rows): ", rows)
+    logging.info("number of Space Possibilities (rows): {0}".format(rows))
     
     options_PSO_GB = {'c1': options_PSO['c1'], 'c2': options_PSO['c1'],
                       'w': options_PSO['w'], 'k': options_PSO['k'], 'p': options_PSO['p']}
@@ -325,7 +337,7 @@ def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, verb
                                   enforce_stationarity=False, enforce_invertibility=False)
 
     results = mod.fit(disp=False)
-    print("BEST result {0}: \n PDQ-parameters: {1} \n SPDQ-parameters: {2} \n Exgoneous Var: {3}".format(
+    logging.info("BEST result {0}: \n PDQ-parameters: {1} \n SPDQ-parameters: {2} \n Exgoneous Var: {3}".format(
         best_result,param, param_seasonal, listPosb))
 
     return results.predict()
@@ -379,14 +391,14 @@ def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options
     Q = options_ACO['Q']
     
     if verbose:    
-        print("Original search Space:", searchSpace)
+        logging.info("Original search Space: {0}".format(searchSpace))
 
     warnings.filterwarnings("ignore") # specify to ignore warning messages
     ACOsearch = ACO(alpha, beta, rho, Q)
     best_result, _ = ACOsearch.optimize(antNumber, antTours, dimentionsRanges=searchSpace, function=SARIMAX_AICc,
                                         functionArgs=[endo_var, exog_var_matrix, PDQS],  verbose=verbose)
     
-    print("BEST result: {0}.".format(best_result))
+    logging.info("BEST result: {0}.".format(best_result))
     param = best_result
     param_seasonal = PDQS
     mod = SARIMAX(endo_var, exog=exog_var_matrix, order=param, seasonal_order=param_seasonal,
@@ -418,9 +430,8 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
         options_ACO: parametrization for ACO algorithm. E.G.:
             {'antNumber':2, 'antTours':1, 'alpha':2, 'beta':2, 'rho':0.5, 'Q':2}
     """
-    
+
     search_results = []
-    
     def sarimax_ACO_PDQ_search_MAPE(XX, **Allkwargs):
         kwargs = Allkwargs['kwargs']
         S_parameter_posb = kwargs['S_parameter_posb']
@@ -440,12 +451,11 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
                 true_exog = exog[:, listPosb]
             else:
                 true_exog = None
-            
-            print("ACO Search will start with PDQS: {0}".format(pdqs))
+            logging.info("ACO Search will start with PDQS: {0} and Exogenous Columns {1}".format(pdqs, listPosb))
             y_sarimax, pdq_param = sarimax_ACO_PDQ_search(endo_var=endo, exog_var_matrix=true_exog,
                                                PDQS=pdqs, searchSpace=searchSpaceACO,
                                                options_ACO=options_ACO,  verbose=verbose)
-            
+                       
             mape_result = MAPE(endo, y_sarimax)
             return_matrix[Index] = mape_result
             
@@ -459,15 +469,15 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
     searchSpace[-1] = [0, qt_s_posb]
     
     searchSpace = copy.copy(searchSpace)
-    print("Original search Space:", searchSpace)
+    logging.info("Original search Space: {0}".format(searchSpace))
     exogs_possibilites = range(0,2**exog_var_matrix.shape[1]) 
     searchSpace.append(exogs_possibilites)
-    print("search Space with Exog Possibilities: ", searchSpace)
+    logging.info("search Space with Exog Possibilities: {0}".format(searchSpace))
     
     searchSpacePSO = searchSpace[3:]
     searchSpacePSO = list(map(lambda L: max(L), searchSpacePSO))
     min_boudaries = np.zeros(len(searchSpacePSO))
-    print("PSO boundaries: ", min_boudaries, searchSpacePSO)
+    logging.info("PSO boundaries: {0} {1}".format(min_boudaries, searchSpacePSO))
     
     # Call instance of LBestPSO with a neighbour-size of 3 determined by
     # the L2 (p=2) distance.
@@ -475,7 +485,7 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
                       'w': options_PSO['w'], 'k': options_PSO['k'], 'p': options_PSO['p']}
     
     dimensions = len(searchSpacePSO)
-    print(dimensions)
+    logging.info(dimensions)
     optimizer = ps.global_best.GlobalBestPSO(n_particles=options_PSO['n_particles'], dimensions=dimensions,
                                              bounds=(min_boudaries, searchSpacePSO), options=options_PSO_GB)
 
@@ -484,8 +494,7 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
     AllKwargs = {'kwargs': {'searchSpaceACO':searchSpaceACO, 'endo':endo_var, 'exog':exog_var_matrix,'verbose':verbose, 'S_parameter_posb':S_parameter_posb},
                  'options_ACO':options_ACO}
     
-    optimizer.optimize(sarimax_ACO_PDQ_search_MAPE, iters=options_PSO['n_iterations'],
-                               verbose=verbose, **AllKwargs)
+    optimizer.optimize(sarimax_ACO_PDQ_search_MAPE, iters=options_PSO['n_iterations'],verbose=verbose, **AllKwargs)
     
     global_best_result = sorted(search_results, key=lambda x: x[0])[-1]
     
@@ -493,7 +502,7 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
     param_seasonal = global_best_result[2]
     listPosb = convertInt2BinaryList(global_best_result[3])
     
-    print("Global best result: pdq={0}, pdqs={1}, X={2}".format(param, param_seasonal, listPosb))
+    logging.info("Global best result: pdq={0}, pdqs={1}, X={2}".format(param, param_seasonal, listPosb))
     
     if len(listPosb) > 0:
         true_exog = exog_var_matrix[:, listPosb]
