@@ -91,7 +91,20 @@ def train_test_split_prev(serie, num_lags_pass, num_lags_fut, tr_vd_ts_percents 
     return X_train, y_train, X_test, y_test
 
 def convertInt2BinaryList(number):
-    return [int(x) for x in bin(number)[2:]]
+    binaryList = [int(x) for x in bin(number)[2:]]
+    binaryList.reverse()
+    return binaryList
+
+def convertInt2PosList(number):
+    binaryList = convertInt2BinaryList(number)
+    returnList=[]
+    for i in range(0,len(binaryList)):
+        yesOrNo = binaryList[i]
+        if yesOrNo == 1:
+            listNumber = i*yesOrNo
+            returnList.append(listNumber)
+
+    return returnList
 
 def sarimax_serial_search(endo, exog_var_matrix, search=False, search_exog=False, pdq_ranges=[0,1,2], s_possibilities=[6,12,24,48],
                           param_default = (0, 1, 1), param_seasonal_default=(0,0,0,12)):
@@ -119,7 +132,7 @@ def sarimax_serial_search(endo, exog_var_matrix, search=False, search_exog=False
         pdq = list(itertools.product(p, d, q))
         
         if search_exog:
-            exogs_possibilites = list(map(lambda L: convertInt2BinaryList(2**L), range(exog_var_matrix.shape[1])))
+            exogs_possibilites = list(map(lambda L: convertInt2PosList(2**L), range(exog_var_matrix.shape[1])))
         else:
             exogs_possibilites = np.ones(exog_var_matrix.shape[1], 1)
             
@@ -189,7 +202,7 @@ def sarimax_ACO_search(endo_var, exog_var_matrix, searchSpace, options_ACO, verb
         if param_seasonal[-1] < 0:
             param_seasonal[-1] = 1
         IntBinPos = int(X[-1])
-        listPosb = convertInt2BinaryList(IntBinPos)
+        listPosb = convertInt2PosList(IntBinPos)
         if len(listPosb) > 0:
             true_exog = exog[:, listPosb]
         else:
@@ -228,7 +241,7 @@ def sarimax_ACO_search(endo_var, exog_var_matrix, searchSpace, options_ACO, verb
     param = best_result[0:3]
     param_seasonal = best_result[3:7]
     IntBinPos = int(best_result[-1])
-    listPosb = convertInt2BinaryList(IntBinPos)
+    listPosb = convertInt2PosList(IntBinPos)
     if len(listPosb) > 0:
         true_exog = exog_var_matrix[:, listPosb]
     else:
@@ -270,7 +283,7 @@ def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, verb
             param_seasonal[-1] = S_parameter_posb[param_seasonal[-1]]
             
             IntBinPos = int(X[-1])
-            listPosb = convertInt2BinaryList(IntBinPos)
+            listPosb = convertInt2PosList(IntBinPos)
             if len(listPosb) > 0:
                 true_exog = exog[:, listPosb]
             else:
@@ -326,7 +339,7 @@ def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, verb
     if param_seasonal[-1] < 0:
         param_seasonal[-1] = 1
     IntBinPos = int(best_result[-1])
-    listPosb = convertInt2BinaryList(IntBinPos)
+    listPosb = convertInt2PosList(IntBinPos)
     
     if len(listPosb) > 0:
         true_exog = exog_var_matrix[:, listPosb]
@@ -446,7 +459,7 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
             pdqs = X[0:4].astype('int')
             pdqs[-1] = S_parameter_posb[pdqs[-1]]
             exogenous_int_pos = int(X[-1])
-            listPosb = convertInt2BinaryList(exogenous_int_pos)
+            listPosb = convertInt2PosList(exogenous_int_pos)
             if len(listPosb) > 0:
                 true_exog = exog[:, listPosb]
             else:
@@ -500,7 +513,7 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
     
     param = global_best_result[1]
     param_seasonal = global_best_result[2]
-    listPosb = convertInt2BinaryList(global_best_result[3])
+    listPosb = convertInt2PosList(global_best_result[3])
     
     logging.info("Global best result: pdq={0}, pdqs={1}, X={2}".format(param, param_seasonal, listPosb))
     
