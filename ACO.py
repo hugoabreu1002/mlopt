@@ -83,8 +83,8 @@ class ACO(object):
             Tij will be the pherormonen matrix for the whole graph
             
             fitnessFunction - lesser the better, so a good path should, Cj lesser than Ci
-            Dij_ij = Exp((Cj-Ci)/Ci) + max 10% random
-            Dij_ji = Exp((Ci-Cj)/Cj) + max 10% random
+            Dij[i,j] = Exp((Cj-Ci)/Ci)
+            Dij[j,i] = Exp((Ci-Cj)/Cj)
             
             the random idea is like the ants cant get the distance perfectly
         """
@@ -113,12 +113,9 @@ class ACO(object):
                 if verbose:
                     print("fitness is")
                     print(Cj)
-
-                Dij_ij = np.exp((Cj-Ci)/Ci)
-                Dij[i_index, j_index] = Dij_ij #+ Dij_ij*np.random.rand(1)/10
-    
-                Dij_ji = np.exp((Ci-Cj)/Cj)
-                Dij[j_index, i_index] = Dij_ji #+ Dij_ji*np.random.rand(1)/10
+                    
+                Dij[i_index, j_index] = np.exp((Cj-Ci)/Ci)
+                Dij[j_index, i_index] = np.exp((Ci-Cj)/Cj)
             
             else:
                 Dij[j_index, i_index] = sys.maxsize
