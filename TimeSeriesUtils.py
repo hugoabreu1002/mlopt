@@ -419,9 +419,9 @@ def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options
 
     results = mod.fit(disp=False)
 
-    return results.predict(), best_result
+    return results.aicc, best_result
 
-def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, options_ACO, verbose=False):
+def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, options_ACO, exogColumns=None, verbose=False):
     """ 
         PCO - ACO Sariamx Search.
         It divides the tasks in two. PDQ Search is done by ACO. PDQS Search and Exogenous Variables searches is
@@ -445,7 +445,7 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
     """
 
     search_results = []
-    def sarimax_ACO_PDQ_search_MAPE(XX, **Allkwargs):
+    def sarimax_ACO_PDQ_search_AICC(XX, **Allkwargs):
         kwargs = Allkwargs['kwargs']
         S_parameter_posb = kwargs['S_parameter_posb']
         searchSpaceACO = kwargs['searchSpaceACO']
@@ -465,14 +465,11 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
             else:
                 true_exog = None
             logging.info("ACO Search will start with PDQS: {0} and Exogenous Columns {1}".format(pdqs, listPosb))
-            y_sarimax, pdq_param = sarimax_ACO_PDQ_search(endo_var=endo, exog_var_matrix=true_exog,
+            aicc_result, pdq_param = sarimax_ACO_PDQ_search(endo_var=endo, exog_var_matrix=true_exog,
                                                PDQS=pdqs, searchSpace=searchSpaceACO,
                                                options_ACO=options_ACO,  verbose=verbose)
-                       
-            mape_result = MAPE(endo, y_sarimax)
-            return_matrix[Index] = mape_result
             
-            search_results.append((mape_result, pdq_param, pdqs, exogenous_int_pos))
+            search_results.append((aicc_result, pdq_param, pdqs, exogenous_int_pos))
             
         return return_matrix
     
@@ -507,7 +504,7 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
     AllKwargs = {'kwargs': {'searchSpaceACO':searchSpaceACO, 'endo':endo_var, 'exog':exog_var_matrix,'verbose':verbose, 'S_parameter_posb':S_parameter_posb},
                  'options_ACO':options_ACO}
     
-    optimizer.optimize(sarimax_ACO_PDQ_search_MAPE, iters=options_PSO['n_iterations'],verbose=verbose, **AllKwargs)
+    optimizer.optimize(sarimax_ACO_PDQ_search_AICC, iters=options_PSO['n_iterations'],verbose=verbose, **AllKwargs)
     
     global_best_result = sorted(search_results, key=lambda x: x[0])[-1]
     
@@ -516,6 +513,8 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
     listPosb = convertInt2PosList(global_best_result[3])
     
     logging.info("Global best result: pdq={0}, pdqs={1}, X={2}".format(param, param_seasonal, listPosb))
+    if exogColumns is not None:
+        logging.info("Chosen exog columns: {0}".format(exogColumns[listPosb]))
     
     if len(listPosb) > 0:
         true_exog = exog_var_matrix[:, listPosb]
