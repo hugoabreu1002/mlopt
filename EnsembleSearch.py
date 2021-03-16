@@ -15,73 +15,64 @@ from tqdm import tqdm
 
 class EnsembleSearch:
     
-    def __init__(self, X_train, y_train, X_test, y_test,
-                 size_pop=20, epochs=5, alpha_stop=1e-4, verbose=True):
+    def __init__(self, X_train, y_train, X_test, y_test, epochs=3, size_pop=40, prob_mut=0.8, alpha_stop=1e-4, verbose=True):
         
-        self.X_train = X_train
-        self.y_train = y_train
-        self.X_test = X_test
-        self.y_test = y_test
-        self.size_pop = size_pop
-        self.epochs = epochs
-        self.fitness_array_ = np.array([])
-        self.best_of_all_ = None
-        self.verbose_ = verbose
-        self.alpha_stop = alpha_stop
+        self._X_train = X_train
+        self._y_train = y_train
+        self._X_test = X_test
+        self._y_test = y_test
+        self._size_pop = size_pop
+        self._epochs = epochs
+        self._fitness_array = np.array([])
+        self._best_of_all = None
+        self._verbose = verbose
+        self._alpha_stop = alpha_stop
+        self._prob_mut = prob_mut
 
     def gen_population(self):
-        # TODO review this method
-        # population could be an atribute, or a list of instance of some individual class.
-        # where one individual would be a list o regressors.
 
-        population = [[]]*self.size_pop
+        population = [[]]*self._size_pop
         
-        for i in range(self.size_pop):
+        for i in range(self._size_pop):
             
             qt_regressor = np.random.randint(2,9)
 
-            # TODO add parameters to LR
-            # take a look at https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html?highlight=linearregression#sklearn.linear_model.LinearRegression
-            lista_LR = ['LR',LR(), {}]
-            
             lista_RFR = ['RFR',RFR(), 
                          {'n_estimators':np.random.randint(1,100),
                           'max_depth':np.random.randint(1,20),
                           'min_samples_split':np.random.randint(2,5),      
                           'min_samples_leaf':np.random.randint(2,10),   
-                          'min_weight_fraction_leaf':np.random.rand(1)[0]/2}]
+                          'min_weight_fraction_leaf':np.random.rand(1)[0]/2},
+                         np.inf]
             
-            # TODO Consider to remove ou replace SVR, becouse is too slow
             lista_SVR = ['SVR',SVR(),
                          {'kernel':random.choice(['linear','rbf','poly','sigmoid']),     
                           'epsilon':np.random.rand(1)[0]/4,
-                          'C':random.choice([1,10,100,1000]),'gamma':'auto'}]
+                          'C':random.choice([1,10,100,1000]),'gamma':'auto'},
+                         np.inf]
             
             lista_ADA = ['ADA',ADA(), 
-                         {'n_estimators':np.random.randint(1,50)}]
+                         {'n_estimators':np.random.randint(1,50)}, np.inf]
             
             lista_BAG = ['BAG',BAG(), 
-                         {'n_estimators':np.random.randint(1,50),'max_samples':np.random.randint(1,20)}]
+                         {'n_estimators':np.random.randint(1,50),'max_samples':np.random.randint(1,20)}, np.inf]
             
             lista_GBR = ['GBR',GBR(), 
                          {'n_estimators':np.random.randint(1,100),'max_depth':np.random.randint(1,20),        
                           'min_samples_split':np.random.randint(2,5),      
                           'min_samples_leaf':np.random.randint(2,10),     
-                          'min_weight_fraction_leaf':np.random.rand(1)[0]/2}]
+                          'min_weight_fraction_leaf':np.random.rand(1)[0]/2}, np.inf]
             
-            lista_RAN = ['RAN',RAN(), {}]
+            lista_RAN = ['RAN',RAN(), {}, np.inf]
             
             lista_PAR = ['PAR',PAR(), 
                          {'C': np.random.randint(1,10), 'early_stopping':True,        
-                          'n_iter_no_change':np.random.randint(1,10)}]
+                          'n_iter_no_change':np.random.randint(1,10)}, np.inf]
+
             
-            # TODO add parameters to SGD 
-            # take a look at https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html#sklearn.linear_model.SGDRegressor
-            # consider to implement with https://scikit-learn.org/stable/modules/generated/sklearn.kernel_approximation.Nystroem.html#sklearn.kernel_approximation.Nystroem transformer
-            # it would become a pipiline then?
-            lista_SGD = ['SGD',SGD(), {}]
+            lista_SGD = ['SGD',SGD(), {'penalty':random.choice(['l2', 'l1', 'elasticnet']),'n_iter_no_change':np.random.randint(1,10)}, np.inf]
             
-            lista_regressors = [lista_LR,lista_RFR,lista_SVR,lista_ADA,lista_BAG,
+            lista_regressors = [lista_RFR,lista_SVR,lista_ADA,lista_BAG,
                                 lista_GBR,lista_RAN,lista_PAR,lista_SGD]
             
             random.shuffle(lista_regressors)
@@ -96,24 +87,27 @@ class EnsembleSearch:
         return population
 
     def set_fitness(self, population):
+        # must evaluated each regressor individually also and sort inside the individual
+        # then make a better crossover.
         for i in range(len(population)):
             
             lista_tuplas_VR = []
             nomes = []
             for indv in population[i][1]:
-                
-                while indv[0] in nomes: #adionar X se o nome já estiver dentro
+                # adds X if name already used
+                while indv[0] in nomes:
                     indv[0] = indv[0]+'X'
                 nomes.append(indv[0])
-                
-                lista_tuplas_VR.append((indv[0],indv[1])) #aqui vai pegando cada regressor do indivíduo (lista de regressores),
-                                                          #que é formado pelo nome do regressor e o objeto.
-                
+                #make the tuples for VR: (name, regressor)
+                lista_tuplas_VR.append((indv[0],indv[1]))
+
             Voting_regressor = VotingRegressor(lista_tuplas_VR)
-            Voting_regressor.fit(self.X_train, self.y_train)
+            Voting_regressor.fit(self._X_train, self._y_train)
             
-            mae_vr = mae(Voting_regressor.predict(self.X_test), self.y_test)
+            mae_vr = mae(Voting_regressor.predict(self._X_test), self._y_test)
+            # sets fitness 
             population[i][-1] = mae_vr
+            # sets the object
             population[i][-2] = Voting_regressor
             
         return population
@@ -122,16 +116,14 @@ class EnsembleSearch:
         # In this algorithm there is no mutation. 
         # no need of mutation, since the algorithm already have stochastics inside.
 
-        # in this for loop change only the last half (worst) of the population.
-        for i in range(int(len(population)/2), len(population)-1):
-            qt_regs_pai1 = population[i][0]
-            qt_regs_pai2 = population[i+1][0]
-            
+        # in this for loop keeps best.
+        for i in range(1, len(population)-1):
             #cruzamento
-            if qt_regs_pai1<=qt_regs_pai2:    
-                population[i][1][:int(qt_regs_pai1/2)] = population[2*i][1][:int(qt_regs_pai1/2)]
-            else:
-                population[i][1][:int(qt_regs_pai2/2)] = population[2*i][1][:int(qt_regs_pai2/2)]
+            if np.random.rand() > (1 - self._prob_mut):
+                randomRegsQt = np.random.randint(0,min(population[i][0], population[i-1][0]))
+                for _ in range(randomRegsQt):
+                    randomSample = np.random.randint(0,randomRegsQt)
+                    population[i][1][randomSample] = population[i-1][1][randomSample]
                 
             #modificar nomes dos regressores se houver repetido
             nomes = []
@@ -143,18 +135,18 @@ class EnsembleSearch:
         return population
     
     def early_stop(self):
-        array = self.fitness_array_
+        array = self._fitness_array
         to_break=False
         if len(array) > 4:
             array_diff1_1 = array[1:] - array[:-1]
             array_diff2 = array_diff1_1[1:] - array_diff1_1[:-1]
             
-            if (self.verbose_):
+            if (self._verbose):
                 print('second derivative: ', array_diff2[-2:].mean()) 
                 print('first derivative: ', abs(array_diff1_1[-2:].mean()))
-                print('featness: ', array[-1])
+                print('fitness: ', array[-1])
                 
-            if (array_diff2[-4:].mean()) > 0 and (abs(array_diff1_1[-4:].mean()) < self.alpha_stop):
+            if (array_diff2[-4:].mean()) > 0 and (abs(array_diff1_1[-4:].mean()) < self._alpha_stop):
                 to_break = True
         
         return to_break
@@ -163,21 +155,20 @@ class EnsembleSearch:
         population = self.gen_population()
         population = self.set_fitness(population)
         population.sort(key = lambda x: x[-1])  
-        self.fitness_array_ = np.append(self.fitness_array_, population[0][-1])
-        self.best_of_all_ = population[0][-2]
+        self._fitness_array = np.append(self._fitness_array, population[0][-1])
+        self._best_of_all = population[0][-2]
         
-        for i in tqdm(range(self.epochs)):
+        for i in tqdm(range(self._epochs)):
             population = self.next_population(population)
             population = self.set_fitness(population)
             population.sort(key = lambda x: x[-1])
             
             #pegar o melhor de todas as épocas
-            
-            if population[0][-1] < min(self.fitness_array_):
-                self.best_of_all_ = population[0][-2]
+            if population[0][-1] < min(self._fitness_array):
+                self._best_of_all = population[0][-2]
             
             #adicionar ao array de fitness o atual
-            self.fitness_array_ = np.append(self.fitness_array_, population[0][-1])
+            self._fitness_array = np.append(self._fitness_array, population[0][-1])
 
             if self.early_stop():
                 break
