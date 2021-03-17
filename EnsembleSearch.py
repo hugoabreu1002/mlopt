@@ -1,5 +1,4 @@
 from sklearn.metrics import mean_absolute_error as mae
-from sklearn.linear_model import LinearRegression as LR
 from sklearn.ensemble import RandomForestRegressor as RFR
 from sklearn.svm import SVR 
 from sklearn.ensemble import AdaBoostRegressor as ADA
@@ -12,9 +11,10 @@ from sklearn.ensemble import VotingRegressor
 import numpy as np
 import random
 from tqdm import tqdm
+import copy
 
 class EnsembleSearch:
-    
+            
     def __init__(self, X_train, y_train, X_test, y_test, epochs=3, size_pop=40, prob_mut=0.8, alpha_stop=1e-4, verbose=True):
         
         self._X_train = X_train
@@ -34,55 +34,47 @@ class EnsembleSearch:
         population = [[]]*self._size_pop
         
         for i in range(self._size_pop):
-            
-            qt_regressor = np.random.randint(2,9)
-
-            lista_RFR = ['RFR',RFR(), 
+            content_RFR = ['RFR',RFR(), 
                          {'n_estimators':np.random.randint(1,100),
                           'max_depth':np.random.randint(1,20),
                           'min_samples_split':np.random.randint(2,5),      
                           'min_samples_leaf':np.random.randint(2,10),   
-                          'min_weight_fraction_leaf':np.random.rand(1)[0]/2},
-                         np.inf]
+                          'min_weight_fraction_leaf':np.random.rand(1)[0]/2}]
             
-            lista_SVR = ['SVR',SVR(),
+            content_SVR = ['SVR',SVR(),
                          {'kernel':random.choice(['linear','rbf','poly','sigmoid']),     
                           'epsilon':np.random.rand(1)[0]/4,
-                          'C':random.choice([1,10,100,1000]),'gamma':'auto'},
-                         np.inf]
+                          'C':random.choice([1,10,100,1000]),'gamma':'auto'}]
             
-            lista_ADA = ['ADA',ADA(), 
-                         {'n_estimators':np.random.randint(1,50)}, np.inf]
+            content_ADA = ['ADA',ADA(), 
+                         {'n_estimators':np.random.randint(1,50)}]
             
-            lista_BAG = ['BAG',BAG(), 
-                         {'n_estimators':np.random.randint(1,50),'max_samples':np.random.randint(1,20)}, np.inf]
+            content_BAG = ['BAG',BAG(), 
+                         {'n_estimators':np.random.randint(1,50),'max_samples':np.random.randint(1,20)}]
             
-            lista_GBR = ['GBR',GBR(), 
+            content_GBR = ['GBR',GBR(), 
                          {'n_estimators':np.random.randint(1,100),'max_depth':np.random.randint(1,20),        
                           'min_samples_split':np.random.randint(2,5),      
                           'min_samples_leaf':np.random.randint(2,10),     
-                          'min_weight_fraction_leaf':np.random.rand(1)[0]/2}, np.inf]
+                          'min_weight_fraction_leaf':np.random.rand(1)[0]/2}]
             
-            lista_RAN = ['RAN',RAN(), {}, np.inf]
+            content_RAN = ['RAN',RAN(), {}, np.inf]
             
-            lista_PAR = ['PAR',PAR(), 
+            content_PAR = ['PAR',PAR(), 
                          {'C': np.random.randint(1,10), 'early_stopping':True,        
-                          'n_iter_no_change':np.random.randint(1,10)}, np.inf]
+                          'n_iter_no_change':np.random.randint(1,10)}]
+        
+            content_SGD = ['SGD',SGD(), {'penalty':random.choice(['l2', 'l1', 'elasticnet']),
+                                       'n_iter_no_change':np.random.randint(1,10)}]
+            
+            list_regressors_content = [content_RFR,content_SVR,content_ADA,content_BAG,content_GBR,content_RAN,content_PAR,content_SGD]
+            
+            weights = np.random.random(size=len(list_regressors_content))
+            
+            for j in range(len(list_regressors_content)):
+                list_regressors_content[j][1] = list_regressors_content[j][1].set_params(**list_regressors_content[j][2])
 
-            
-            lista_SGD = ['SGD',SGD(), {'penalty':random.choice(['l2', 'l1', 'elasticnet']),'n_iter_no_change':np.random.randint(1,10)}, np.inf]
-            
-            lista_regressors = [lista_RFR,lista_SVR,lista_ADA,lista_BAG,
-                                lista_GBR,lista_RAN,lista_PAR,lista_SGD]
-            
-            random.shuffle(lista_regressors)
-            
-            lista_regressors = lista_regressors[0:qt_regressor]
-            
-            for j in range(len(lista_regressors)):
-                lista_regressors[j][1] = lista_regressors[j][1].set_params(**lista_regressors[j][2])
-
-            population[i] = [qt_regressor, lista_regressors, 'voting_regressor', np.inf]
+            population[i] = [weights, list_regressors_content, 'voting_regressor', np.inf]
             
         return population
 
@@ -90,48 +82,65 @@ class EnsembleSearch:
         # must evaluated each regressor individually also and sort inside the individual
         # then make a better crossover.
         for i in range(len(population)):
-            
-            lista_tuplas_VR = []
+            lista_tuplas_VR_indv = []
             nomes = []
-            for indv in population[i][1]:
+            individual = population[i]
+            for regressor_content in individual[1]:
                 # adds X if name already used
-                while indv[0] in nomes:
-                    indv[0] = indv[0]+'X'
-                nomes.append(indv[0])
-                #make the tuples for VR: (name, regressor)
-                lista_tuplas_VR.append((indv[0],indv[1]))
+                regressor_name = regressor_content[0]
+                while regressor_name in nomes:
+                    regressor_name = regressor_name+'X'
+                nomes.append(regressor_name)
 
-            Voting_regressor = VotingRegressor(lista_tuplas_VR)
+                #make the tuples for VR: (name, regressor)
+                regressor_object = regressor_content[1]
+                lista_tuplas_VR_indv.append((regressor_name,regressor_object))
+            
+            Voting_regressor = VotingRegressor(lista_tuplas_VR_indv, weights=individual[0])
             Voting_regressor.fit(self._X_train, self._y_train)
             
             mae_vr = mae(Voting_regressor.predict(self._X_test), self._y_test)
             # sets fitness 
-            population[i][-1] = mae_vr
+            individual[-1] = mae_vr
             # sets the object
-            population[i][-2] = Voting_regressor
+            individual[-2] = Voting_regressor
+
+            population[i] = copy.copy(individual)
             
+        return population
+
+    def crossover(self, population):
+        qtRegressors = len(population[0][1])
+        qtParents = int(len(population))
+        for badParent in range(int(qtParents/2), qtParents-1):
+            #cruzamento
+            goodParent = int(badParent/2)
+            if np.random.rand() > (1 - self._prob_mut):
+                randomRegsQt = np.random.randint(low=0,high=qtRegressors)
+                for _ in range(randomRegsQt):
+                    # crossonly the same regressors
+                    # worse index i receives from better index i-1
+                    randomSample = np.random.randint(low=0,high=qtRegressors)
+                    population[badParent][1][randomSample] = population[goodParent][1][randomSample]
+
+                population[badParent][0] = population[goodParent][0]
+                
+        return population
+
+    def mutation(self, population):
+        """
+            receives a population and mutates the VR weight by a random from 0 to 1
+        """
+        for i in range(1, len(population)-1):
+            #mutation
+            if np.random.rand() > (1 - self._prob_mut):
+                population[i][0] += np.random.randn()/10
+                
         return population
     
     def next_population(self, population):
-        # In this algorithm there is no mutation. 
-        # no need of mutation, since the algorithm already have stochastics inside.
-
-        # in this for loop keeps best.
-        for i in range(1, len(population)-1):
-            #cruzamento
-            if np.random.rand() > (1 - self._prob_mut):
-                randomRegsQt = np.random.randint(0,min(population[i][0], population[i-1][0]))
-                for _ in range(randomRegsQt):
-                    randomSample = np.random.randint(0,randomRegsQt)
-                    population[i][1][randomSample] = population[i-1][1][randomSample]
-                
-            #modificar nomes dos regressores se houver repetido
-            nomes = []
-            for reg in population[i][1]:
-                while reg[0] in nomes: #adionar X se o nome já estiver dentro
-                    reg[0] = reg[0]+'X'
-                nomes.append(reg[0])
-        
+        population = self.crossover(copy.copy(population))
+        population = self.mutation(copy.copy(population))
         return population
     
     def early_stop(self):
