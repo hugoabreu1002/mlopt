@@ -9,7 +9,7 @@ import random
 from tqdm import tqdm
 
 class AGMLP_Residual:
-    # TODO documentar
+    """ A Residual correction aproach for time series"""
     def __init__(self, data, y_sarimax, num_epochs = 10, size_pop=10, prob_mut=0.8, tr_ts_percents=[80,20], alpha_stop=1e-4):
         """
             data - original data
