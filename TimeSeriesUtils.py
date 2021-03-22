@@ -51,6 +51,12 @@ def train_test_split(serie, num_lags, tr_vd_ts_percents = [80, 20], print_shapes
     y_train = y[0:len_train]
     X_test = X[len_train:len_train+len_test]
     y_test = y[len_train:len_train+len_test]
+    
+    if print_shapes:
+        print("X_train: ", X_train.shape)
+        print("y_train: ", y_train.shape)
+        print("X_test: ", X_test.shape)
+        print("y_test: ", y_test.shape)
        
     return X_train, y_train, X_test, y_test
 
@@ -87,6 +93,12 @@ def train_test_split_prev(serie, num_lags_pass, num_lags_fut, tr_vd_ts_percents 
     y_train = serie[0:len_train]
     X_test = X[len_train:len_train+len_test]
     y_test = y[len_train:len_train+len_test]
+    
+    if print_shapes:
+        print("X_train: ", X_train.shape)
+        print("y_train: ", y_train.shape)
+        print("X_test: ", X_test.shape)
+        print("y_test: ", y_test.shape)
     
     return X_train, y_train, X_test, y_test
 

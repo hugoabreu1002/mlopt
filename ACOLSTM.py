@@ -3,6 +3,9 @@ from keras.layers import LSTM
 from keras.layers import Dense
 from mlopt.TimeSeriesUtils import MAPE
 from mlopt.ACO import ACO
+from numpy.random import seed
+from tensorflow.random import set_seed
+import warnings
 
 class ACOLSTM:
     """
@@ -11,9 +14,7 @@ class ACOLSTM:
         y: y for lstm.
         
         train_test_split: division in train and test for X and y in lstm training and test.
-        
-        
-        
+    
         options_ACO: parametrization for ACO algorithm. EG:
             {'antNumber':2, 'antTours':1, 'alpha':2, 'beta':2, 'rho':0.5, 'Q':2}
     """
@@ -27,6 +28,8 @@ class ACOLSTM:
         self._y_hat = None
         self._best_result = None
         self._best_result_fitness = None
+        seed(1)
+        set_seed(2)
     
     def setACO(self):
         alpha = self._options_ACO['alpha']
@@ -41,7 +44,8 @@ class ACOLSTM:
         model = Sequential()
         model.add(LSTM(parameters['fl_qtn'], activation=parameters['fl_func'],
                        recurrent_activation=parameters['fl_refunc'],
-                       return_sequences=True, input_shape=self._X.shape[0])))
+                       return_sequences=True, input_shape=self._X.shape[0]))
+        
         model.add(LSTM(parameters['sl_qtn'], activation=parameters['sl_func'],
                        recurrent_activation=parameters['sl_refunc'],))
         model.add(Dense(self._y.shape[1]))
@@ -66,8 +70,7 @@ class ACOLSTM:
         
         return model
     
-    
-    def optimize(self, searchSpace):
+    def optimize(self, searchSpace, verbose=True):
         """
             searchSpace: is the space of search for the ants.
             Ants 'X' will move for the graph in this problem based on the following parameters
@@ -91,21 +94,19 @@ class ACOLSTM:
                 epochs = list(range(3))\n
                 searchSpace = [fl_qtn, fl_func, fl_refunc, sl_qtn, sl_func, sl_refunc, optimizer]
         """
-        
-        X_train = X[0:int(len(y_sarimax)*self._tr_ts_percents[0]/100)]
-        data_test = gen[int(len(y_sarimax)*tr_ts_percents[0]/100):]
-        
         def fitnessFunction(X, *args):
             model = self.fitModel(X)
             y_hat = model.predict(self._X_test)
             fitness = MAPE(y_hat, self._y_test)
             return fitness
-            
-        X = searchSpace
+        
         warnings.filterwarnings("ignore") # specify to ignore warning messages
-        self._best_result, self._best_result_fitness = ACOsearch.optimize(antNumber, antTours, dimentionsRanges=searchSpace,
-                                                              function=fitnessFunction,
-                                                              verbose=verbose)
+        ACOsearch = self.setACO()
+        self._best_result, self._best_result_fitness = ACOsearch.optimize(self._options_ACO['antNumber'],
+                                                                          self._options_ACO['antTours'],
+                                                                          dimentionsRanges=searchSpace,
+                                                                          function=fitnessFunction,
+                                                                          verbose=verbose)
         
         finalFitedModel = self.fitModel(self._best_result)
         y_hat = finalFitedModel.predict(self._X_test)
