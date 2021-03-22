@@ -37,21 +37,35 @@ class ACOLSTM:
         
         return ACOsearch
             
-    def setModel(self, search_parameters):
-        model = Sequential()  
-        
-        model.add(LSTM(search_parameters['fl_qtn'], activation=search_parameters['fl_func'],
-                       recurrent_activation=search_parameters['fl_refunc'],
+    def setModel(self, parameters):
+        model = Sequential()
+        model.add(LSTM(parameters['fl_qtn'], activation=parameters['fl_func'],
+                       recurrent_activation=parameters['fl_refunc'],
                        return_sequences=True, input_shape=self._X.shape[0])))
-        
-        model.add(LSTM(search_parameters['sl_qtn'], activation=search_parameters['sl_func'],
-                       recurrent_activation=search_parameters['sl_refunc'],))
-        
+        model.add(LSTM(parameters['sl_qtn'], activation=parameters['sl_func'],
+                       recurrent_activation=parameters['sl_refunc'],))
         model.add(Dense(self._y.shape[1]))
-        
-        model.compile(optimizer=search_parameters['optimizer'], loss='mse')
+        model.compile(optimizer=parameters['optimizer'], loss='mse')
         
         return model
+    
+    def fitModel(self, X):
+        activation = ['elu', 'selu', 'tanh', 'relu', 'linear', 'sigmoid']
+        optimizer = ['SGD', 'adam', 'rmsprop','Adagrad']
+        epochs = [100,200,400]
+        
+        search_parameters={'fl_qtn':X[0],'fl_func':activation[X[1]],'fl_refunc':activation[X[2]],
+                            'sl_qtn':X[3],'sl_func':activation[X[4]],'sl_refunc':activation[X[5]],
+                            'optimizer':optimizer[X[6]]}
+        
+        model = self.setModel(search_parameters)
+        model.fit(self._X_train, self._y_train, epochs=epochs[X[7]], verbose=0, shuffle=False,
+                    use_multiprocessing=True)
+        y_hat = model.predict(self._X_test)
+        fitness = MAPE(y_hat, self._y_test)
+        
+        return model
+    
     
     def optimize(self, searchSpace):
         """
@@ -64,7 +78,8 @@ class ACOLSTM:
                                
             activation and optimizer choices:\n
             activation = ['elu', 'selu', 'tanh', 'relu', 'linear', 'sigmoid']\n
-            optimizer = ['SGD', 'adam', 'rmsprop','Adagrad']\n            
+            optimizer = ['SGD', 'adam', 'rmsprop','Adagrad']\n
+            epochs = [100,200,400]\n            
             searchSpace. E.G:\n
                 fl_qtn = [10, 30, 50]\n
                 fl_func = list(range(6))\n
@@ -73,6 +88,7 @@ class ACOLSTM:
                 sl_func = list(range(6))\n
                 sl_refunc = list(range(6))\n
                 optimizer = list(range(4))\n
+                epochs = list(range(3))\n
                 searchSpace = [fl_qtn, fl_func, fl_refunc, sl_qtn, sl_func, sl_refunc, optimizer]
         """
         
@@ -80,19 +96,9 @@ class ACOLSTM:
         data_test = gen[int(len(y_sarimax)*tr_ts_percents[0]/100):]
         
         def fitnessFunction(X, *args):
-            activation = ['elu', 'selu', 'tanh', 'relu', 'linear', 'sigmoid']
-            optimizer = ['SGD', 'adam', 'rmsprop','Adagrad']
-            epochs = [100,200,400]
-            
-            search_parameters={'fl_qtn':X[0],'fl_func':activation[X[1]],'fl_refunc':activation[X[2]],
-                               'sl_qtn':X[3],'sl_func':activation[X[4]],'sl_refunc':activation[X[5]],
-                               'optimizer':optimizer[X[6]]}
-            
-            model = self.setModel(search_parameters)
-            model.fit(self._X_train, self._y_train, epochs=200, verbose=0, shuffle=False, use_multiprocessing=True)
+            model = self.fitModel(X)
             y_hat = model.predict(self._X_test)
             fitness = MAPE(y_hat, self._y_test)
-            
             return fitness
             
         X = searchSpace
@@ -101,18 +107,8 @@ class ACOLSTM:
                                                               function=fitnessFunction,
                                                               verbose=verbose)
         
-        activation = ['elu', 'selu', 'tanh', 'relu', 'linear', 'sigmoid']
-        optimizer = ['SGD', 'adam', 'rmsprop','Adagrad']
-        epochs = [100,200,400]
+        finalFitedModel = self.fitModel(self._best_result)
+        y_hat = finalFitedModel.predict(self._X_test)
         
-        search_parameters={'fl_qtn':best_result[0],'fl_func':activation[best_result[1]],
-                           'fl_refunc':activation[best_result[2]],'sl_qtn':best_result[3],
-                           'sl_func':activation[best_result[4]],'sl_refunc':activation[best_result[5]],
-                            'optimizer':optimizer[best_result[6]]}
-        
-        model = self.setModel(search_parameters)
-        model.fit(self._X_train, self._y_train, epochs=200, verbose=0, shuffle=False, use_multiprocessing=True)
-        y_hat = model.predict(self._X_test)
-        
-        return model, y_hat
+        return finalFitedModel, y_hat
         
