@@ -1,9 +1,9 @@
-import sparse
 import numpy as np
 from tqdm import tqdm
 from scipy.stats import mode
 import sys
 import itertools as it
+import os.path as path
 
 class ACO(object):
     """
@@ -69,9 +69,10 @@ class ACO(object):
         # maybe use float 32 dtype...    
         self._Space = self.setSpace()
         self._verticesFitness = self.initializeVerticesFitness()
-        self._Dij = 1/np.zeros((self._Space.shape[0], self._Space.shape[0]), dtype=np.float32)
-        self._Pif = sparse.COO(np.ones((self._Space.shape[0], self._Space.shape[0]), dtype=np.float32))
-        self._Tij = sparse.COO(np.ones((self._Space.shape[0], self._Space.shape[0]), dtype=np.float32))
+        
+        self._Dij = np.ones((self._Space.shape[0], 1), dtype=np.float32)
+        self._Pif = np.ones((self._Space.shape[0], 1), dtype=np.float32)
+        self._Tij = np.ones((self._Space.shape[0], 1), dtype=np.float32)
         
         self._antsVertice = np.random.choice(range(self._Space.shape[0]), size=self._antNumber)
         self._oldAntsVertice = np.zeros(self._antNumber, dtype=int)
@@ -90,7 +91,11 @@ class ACO(object):
         """
         for k_ant in range(self._antNumber):
             i_index = self._antsVertice[k_ant]
-            j_index = np.random.choice(range(0, self._Space.shape[0]))
+
+            # exploitation ants goes randomly near the last position
+            j_index = i_index + int(np.random.randint(-self._Space.shape[0], self._Space.shape[0])/10)
+            if j_index < 0:
+                j_index = np.random.choice(range(0,self._Space.shape[0]))
             
             if i_index != j_index: # ant should not stay at the point
 
@@ -104,6 +109,8 @@ class ACO(object):
                 if verbose:
                     print("fitness is")
                     print(Ci)
+
+                if verbose:
                     print("Setting fitness for")
                     print(self._Space[j_index, :])
                 
@@ -114,53 +121,38 @@ class ACO(object):
                     print("fitness is")
                     print(Cj)
                     
-                Dij[i_index, j_index] = np.exp((Cj-Ci)/Ci)
-                Dij[j_index, i_index] = np.exp((Ci-Cj)/Cj)
+                Dij[i_index, 0] = Ci
+                Dij[j_index, 0] = Cj
             
             else:
-                Dij[j_index, i_index] = sys.maxsize
+                Dij[j_index, 0] = sys.maxsize
         
         return Dij
-    
                                           
     def updateTij(self, Tij, Dij, Ants, last_Ants, rho=0.5, Q=1):
-        # Dij_inf = Dij == sys.maxsize
-        # Dij_notinf = Dij != sys.maxsize
-        # Dij[Dij_inf] = Dij_notinf.max()
-
         sumdeltaTij = np.zeros(Tij.shape, dtype=np.float32)
 
-        for kij in zip(last_Ants, Ants):
+        All_ants = np.concatenate((Ants, last_Ants))
+        
+        for kij in All_ants:
+
+            sumdeltaTij[kij] += Q/Dij[kij]
             sumdeltaTij[kij] += Q/Dij[kij]
 
         Tij = (1-rho)*Tij + sumdeltaTij
 
-        Tij += np.random.randint(1, size=Tij.shape)/10
-
         return Tij
-
                                           
     def updatePij(self, Pij, Tij, Dij, alpha=1, beta=1):
-        # Dij_inf = Dij == sys.maxsize
-        # Dij_notinf = Dij != sys.maxsize
-        # Dij[Dij_inf] = Dij_notinf.max()
-
-        Pij = (Tij**alpha)/(Dij**beta)
-        Pij += np.random.randint(1, size=Pij.shape)/10
-        
-        row_sums = Pij.sum(axis=1)
+        Pij = (Tij**alpha)/(Dij**beta)        
+        row_sums = Pij.sum(axis=0)
         Pij = Pij / row_sums[:, np.newaxis]
         
         return Pij
 
-
     def getHistorySolutions(self):
         self._ants_History = list(filter(lambda x: not x is None, self._ants_History))
         return self._ants_History, 
-    
-    def plotHistorySolutions(self):
-        #TODO
-        return 0
 
     def updateAntsPosition(self, Ants, Pij, verbose=False):
         last_Ants = Ants.copy()
@@ -168,17 +160,17 @@ class ACO(object):
         for i in range(Ants.shape[0]):
             k = Ants[i]
 
-            possible_move = np.argwhere(Pij[k,:] > 0).flatten()
+            possible_moves = np.argwhere(Pij[:,0] > 0).flatten()
 
-            if possible_move.shape[0] != 0:
-                weights = Pij[k, possible_move]/Pij[k, possible_move].sum()
-                Ants[i] = np.random.choice(possible_move, p=weights)
+            if possible_moves.shape[0] != 0:
+                weights = Pij[possible_moves, 0]/Pij[possible_moves, 0].sum()
+                Ants[i] = np.random.choice(possible_moves, p=weights)
             else:
-                Ants[i] = np.random.choice(np.array(range(Pij.shape[1])))
+                Ants[i] = np.random.choice(np.array(range(Pij.shape[0])))
 
             if verbose:
                 print("Ant {} possibilities:".format(i))
-                print(possible_move)
+                print(possible_moves)
                 print("Ant {} move from {} to {}".format(i, k, Ants[i]))
 
         return Ants, last_Ants
