@@ -64,9 +64,7 @@ class ACO(object):
     def initializeVerticesFitness(self):
         return 1/np.zeros(self._Space.shape[0])
     
-    def initializeMatricesAndAntsPosition(self):
-        # TODO make with dynamic programming to prevent uncessary allocation of a lot o memory.
-        # maybe use float 32 dtype...    
+    def initializeMatricesAndAntsPosition(self):    
         self._Space = self.setSpace()
         self._verticesFitness = self.initializeVerticesFitness()
         
@@ -93,8 +91,9 @@ class ACO(object):
             i_index = self._antsVertice[k_ant]
 
             # exploitation ants goes randomly near the last position
-            j_index = i_index + int(np.random.randint(-self._Space.shape[0], self._Space.shape[0])/10)
-            if j_index < 0:
+            random_index_move = int(np.random.randint(-self._Space.shape[0], self._Space.shape[0])/10)
+            j_index = i_index + random_index_move
+            if j_index < 0 or j_index > self._Space.shape[0]:
                 j_index = np.random.choice(range(0,self._Space.shape[0]))
             
             if i_index != j_index: # ant should not stay at the point
