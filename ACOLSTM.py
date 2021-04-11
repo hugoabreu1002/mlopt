@@ -1,6 +1,7 @@
 from keras.models import Sequential
 from keras.layers import LSTM
 from keras.layers import Dense
+from keras import backend as K
 from mlopt.ACO import ACO
 from sklearn.metrics import mean_absolute_error as MAE
 from numpy.random import seed
@@ -8,6 +9,8 @@ from tensorflow.random import set_seed
 import tensorflow as tf
 import warnings
 import os
+import warnings
+warnings.filterwarnings("ignore")
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 seed(1)
@@ -51,23 +54,25 @@ class ACOLSTM:
         return ACOsearch
             
     def setModel(self, parameters):
+        model = None
+        K.clear_session()
         model = Sequential()
         if self._verbose:
             print(parameters)
             
         model.add(LSTM(units=parameters['fl_qtn'], activation=parameters['fl_func'],
-                       recurrent_activation=parameters['fl_func'],
-                       return_sequences=True, input_shape=(self._X_train.shape[1], self._n_variables)))
+                    recurrent_activation=parameters['fl_func'],
+                    return_sequences=True, input_shape=(self._X_train.shape[1], self._n_variables)))
         
         model.add(LSTM(units=parameters['sl_qtn'], activation=parameters['sl_func'],
-                       recurrent_activation=parameters['fl_func']))
+                    recurrent_activation=parameters['fl_func']))
         
         model.add(Dense(units=parameters['tl_qtn'], activation=parameters['tl_func']))
 
         model.add(Dense(self._y_train.shape[1]))
         
         model.compile(optimizer=parameters['optimizer'], loss='mae', metrics=['mse'])
-        
+            
         return model
     
     def fitModel(self, X):
@@ -76,11 +81,11 @@ class ACOLSTM:
                            'tl_qtn':X[4],'tl_func':self._activations[X[5]],
                            'optimizer':self._optimizers[X[6]]}
         
-        model = self.setModel(search_parameters)
-        model.fit(self._X_train, self._y_train, epochs=self._epochs[X[7]], verbose=0, shuffle=False,
+        setedModel = self.setModel(search_parameters)
+        setedModel.fit(self._X_train, self._y_train, epochs=self._epochs[X[7]], verbose=0, shuffle=False,
                     use_multiprocessing=True)
         
-        return model
+        return setedModel
     
     def optimize(self, searchSpace, activations=['elu', 'selu', 'tanh', 'relu', 'linear', 'sigmoid'],
                  optimizers=['SGD', 'adam', 'rmsprop','Adagrad'],

@@ -106,7 +106,7 @@ class AGMLP_Residual:
         """
         population = [[1,1,1,1,'objeto_erro','objeto_ass',np.inf]]*self._size_pop
         for i in range(0, self._size_pop):
-            population[i] = [random.randint(1, 20), random.randint(1, 20),  random.randint(1, 20), random.randint(1, 20), 'objeto_erro', 'objeto_ass', 10]
+            population[i] = [random.randint(1, 30), random.randint(1, 30),  random.randint(1, 30), random.randint(1, 30), 'objeto_erro', 'objeto_ass', 10]
         
         return population
 
