@@ -64,7 +64,7 @@ class LSTM_Residual:
         
         return population
 
-    def fit(self, lag_error, searchSpace, options_ACO): 
+    def fit(self, lag_error, searchSpace, options_ACO, saturate=True, saturation=[0,1]): 
         
         erro_train_entrada, erro_train_saida, erro_test_entrada, erro_test_saida = self.train_test_split(
             self._erro, lag_error)
@@ -81,6 +81,10 @@ class LSTM_Residual:
         print(error_hat_test.shape)
         
         y_hat_test = self._data_test_arima[:] + error_hat_test[:,0]
+        if saturate:
+            y_hat_test[y_hat_test < saturation[0]] = saturation[0]
+            y_hat_test[y_hat_test > saturation[1]] = saturation[1]
+            
         print("shape y_hat_test")
         print(y_hat_test.shape)
         

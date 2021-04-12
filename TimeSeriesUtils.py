@@ -18,7 +18,10 @@ rotatingHandler = RotatingFileHandler(filename='timeSeriesUtils.log', encoding=N
 rotatingHandler.setLevel(logging.INFO)
 logging.getLogger('').addHandler(rotatingHandler)
 
-def MAPE(y_pred, y_true): 
+def MAPE(y_pred, y_true):
+    """
+        (y_pred, y_true)
+    """
     mask = y_true != 0
     return (np.fabs(y_true - y_pred)/y_true)[mask].mean()
 
