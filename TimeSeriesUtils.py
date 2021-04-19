@@ -62,6 +62,43 @@ def train_test_split(serie, num_lags, tr_vd_ts_percents = [80, 20], print_shapes
        
     return X_train, y_train, X_test, y_test
 
+def train_test_split_with_Exog(serie, exog_vars, num_lags, tr_vd_ts_percents = [80, 20], print_shapes=True):
+    """
+        Slipts a time series and its exogenous variables to train and test Data.
+        The y_train and y_test returned comes from the serie input. X_train and X_test
+        are the concatenation of the serie and exog_vars.
+
+        serie : is the time serie data
+
+        exog_vars : is an array [n,m], n is number of observed points and m is the number of varaibles
+        
+        num_lags : quantity of data behind y data
+        
+        tr_vd_ts_percents : divistion percentages
+        
+        print_shapes : True chose to print final shapes. Default is False.
+    """
+    if print_shapes:
+        print("Series shape: {0}. Exogenous variables shape {1}.".format(serie.shape, exog_vars.shape))
+        
+    X_train_serie, y_train, X_test_serie, y_test = train_test_split(serie, num_lags,
+                                                                        tr_vd_ts_percents,
+                                                                        print_shapes)
+
+    X_train = X_train_serie.copy()
+    X_test = X_test_serie.copy()
+
+    for c in range(exog_vars.shape[1]):
+        exog_var = exog_vars[:,c]
+        X_train_exog_var, _, X_test_exog_var, _ = train_test_split(exog_var, num_lags,
+                                                                        tr_vd_ts_percents,
+                                                                        print_shapes)
+        
+        X_train = np.concatenate([X_train, X_train_exog_var], axis=1)
+        X_test = np.concatenate([X_test, X_test_exog_var], axis=1)
+    
+    return X_train, y_train, X_test, y_test
+
 def train_test_split_prev(serie, num_lags_pass, num_lags_fut, tr_vd_ts_percents = [80, 20], print_shapes = False):
     """
         Slipts a time series to train and test Data.

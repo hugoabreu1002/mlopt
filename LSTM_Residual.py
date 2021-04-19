@@ -20,7 +20,7 @@ class LSTM_Residual:
         self._data_train = data[:int(tr_ts_percents[0]/100*len(data))]
         self._data_test = data[int(tr_ts_percents[0]/100*len(data)):]
         self._y_arima = y_arima
-        self._erro = data-y_arima
+        self._error = data-y_arima
         self._data_train_arima = y_arima[:int(tr_ts_percents[0]/100*len(y_arima))]
         self._data_test_arima = y_arima[int(tr_ts_percents[0]/100*len(y_arima)):]
         self._tr_ts_percents = tr_ts_percents
@@ -48,26 +48,11 @@ class LSTM_Residual:
         y_test = y[len_train:len_train+len_test]
 
         return X_train, y_train, X_test, y_test
-    
-    def gen_population(self):
-        """
-            Generates the population. 
-            The population is a list of lists where every element in the inner list corresponds to:
-            [lag_residue_regression, lag_original_sarimax_association, lag_estimated_residue, forecast_estimated_residue
-            , 'object_resiue_regression', 'object_association', fitness]
-            
-            The lags and forecast variables are token from a uniform distribution from 1 to 20.
-        """
-        population = [[1,1,1,1,'objeto_erro','objeto_ass',np.inf]]*self._size_pop
-        for i in range(0, self._size_pop):
-            population[i] = [random.randint(1, 20), random.randint(1, 20),  random.randint(1, 20), random.randint(1, 20), 'objeto_erro', 'objeto_ass', 10]
-        
-        return population
 
     def fit(self, lag_error, searchSpace, options_ACO, saturate=True, saturation=[0,1]): 
         
         erro_train_entrada, erro_train_saida, erro_test_entrada, erro_test_saida = self.train_test_split(
-            self._erro, lag_error)
+            self._error, lag_error)
         
         #LSTM_erro
         lstmOptimizer = ACOLSTM(erro_train_entrada, erro_train_saida, erro_test_entrada, erro_test_saida, 1,
