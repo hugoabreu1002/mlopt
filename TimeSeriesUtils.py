@@ -83,7 +83,7 @@ def train_test_split_with_Exog(serie, exog_vars, num_lags, tr_vd_ts_percents = [
         
     X_train_serie, y_train, X_test_serie, y_test = train_test_split(serie, num_lags,
                                                                         tr_vd_ts_percents,
-                                                                        print_shapes)
+                                                                        False)
 
     X_train = X_train_serie.copy()
     X_test = X_test_serie.copy()
@@ -92,10 +92,13 @@ def train_test_split_with_Exog(serie, exog_vars, num_lags, tr_vd_ts_percents = [
         exog_var = exog_vars[:,c]
         X_train_exog_var, _, X_test_exog_var, _ = train_test_split(exog_var, num_lags,
                                                                         tr_vd_ts_percents,
-                                                                        print_shapes)
+                                                                        False)
         
         X_train = np.concatenate([X_train, X_train_exog_var], axis=1)
         X_test = np.concatenate([X_test, X_test_exog_var], axis=1)
+
+    if print_shapes:
+        print("X_train: {0}\n y_train: {1}\n X_test: {2}\n y_test: {3}\n".format(X_train.shape, y_train.shape, X_test.shape, y_test.shape))
     
     return X_train, y_train, X_test, y_test
 
