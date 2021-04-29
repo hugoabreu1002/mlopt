@@ -10,7 +10,6 @@ import random
 from tqdm import tqdm
 
 class AGMLP_VR_Residual(AGMLP_Residual):
-    # TODO Documentar
     def gen_population(self):
         """
             Generates the population. 
