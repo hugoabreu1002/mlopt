@@ -20,7 +20,9 @@ class ACOLSTM:
         options_ACO: parametrization for ACO algorithm. EG:
             {'antNumber':2, 'antTours':1, 'alpha':2, 'beta':2, 'rho':0.5, 'Q':2}
     """
-    def __init__(self, X_train, y_train, X_test, y_test, n_variables, options_ACO, verbose=False):
+    def __init__(self, X_train, y_train, X_test, y_test, n_variables,
+                 options_ACO={'antNumber':30, 'antTours':10, 'alpha':2, 'beta':2, 'rho':0.5, 'Q':2},
+                 verbose=False):
         self._X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], n_variables))
         self._y_train = y_train
         self._X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], n_variables))
@@ -48,17 +50,18 @@ class ACOLSTM:
         if self._verbose:
             print(parameters)
 
-        #model.add(LayerNormalization())
-
         model.add(LSTM(units=parameters['fl_qtn'], activation=parameters['fl_func'],
                     recurrent_activation=parameters['fl_func'],
                     return_sequences=True, input_shape=(self._X_train.shape[1], self._n_variables)))
+
+        model.add(LayerNormalization())
         
         model.add(LSTM(units=parameters['sl_qtn'], activation=parameters['sl_func'],
                     recurrent_activation=parameters['fl_func']))
-        
-        model.add(Dense(units=parameters['tl_qtn'], activation=parameters['tl_func']))
 
+        model.add(LayerNormalization())
+
+        model.add(Dense(units=parameters['tl_qtn'], activation=parameters['tl_func']))
         model.add(Dense(self._y_train.shape[1]))
         
         model.compile(optimizer=parameters['optimizer'], loss='mae', metrics=['mse'])
