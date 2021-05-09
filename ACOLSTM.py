@@ -1,25 +1,13 @@
 from keras.models import Sequential
-from keras.layers import LSTM
-from keras.layers import Dense
+from keras.layers import LSTM, Dense, LayerNormalization
 from keras import backend as K
 from mlopt.ACO import ACO
 from sklearn.metrics import mean_absolute_error as MAE
-from numpy.random import seed
-from tensorflow.random import set_seed
 import tensorflow as tf
 import warnings
-import os
+import numpy as np
 import warnings
-warnings.filterwarnings("ignore")
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-seed(1)
-set_seed(2)
-physical_devices = tf.config.list_physical_devices('GPU')
-try:
-    tf.config.experimental.set_memory_growth(physical_devices[0], True)
-except:
-    pass
+import sys
 
 class ACOLSTM:
     """
@@ -59,7 +47,9 @@ class ACOLSTM:
         model = Sequential()
         if self._verbose:
             print(parameters)
-            
+
+        #model.add(LayerNormalization())
+
         model.add(LSTM(units=parameters['fl_qtn'], activation=parameters['fl_func'],
                     recurrent_activation=parameters['fl_func'],
                     return_sequences=True, input_shape=(self._X_train.shape[1], self._n_variables)))
@@ -82,12 +72,22 @@ class ACOLSTM:
                            'optimizer':self._optimizers[X[6]]}
         
         setedModel = self.setModel(search_parameters)
-        setedModel.fit(self._X_train, self._y_train, epochs=self._epochs[X[7]], verbose=0, shuffle=False,
-                    use_multiprocessing=True)
+
+        for i in range(self._X_train.shape[1]):
+            X_train_col = self._X_train[i]
+            if np.isnan(np.sum(X_train_col)):
+                raise("X train has nan in column {0}".format(i))
+
+        if np.isnan(np.sum(self._y_train)):
+            raise("y train has nan")
+
+        setedModel.fit(self._X_train, self._y_train, epochs=self._epochs[X[7]], verbose=self._verbose, shuffle=False,
+                   use_multiprocessing=True)
         
         return setedModel
     
-    def optimize(self, searchSpace, activations=['elu', 'selu', 'tanh', 'relu', 'linear', 'sigmoid'],
+    def optimize(self, Layers_Qtd=[[10, 14, 18, 22], [6, 8, 10], [1, 2, 4]],
+                 activations=['elu', 'selu', 'tanh', 'relu', 'linear', 'sigmoid'],
                  optimizers=['SGD', 'adam', 'rmsprop','Adagrad'],
                  epochs = [100,200,300]):
         """
@@ -103,15 +103,15 @@ class ACOLSTM:
             epochs = [100,200,400]\n            
 
             searchSpace. E.G:\n
-                fl_qtn = [1,10, 30, 50]\n
-                fl_func = list(range(6))\n              
-                sl_qtn = [1,10, 30, 50]\n
-                sl_func = list(range(6))\n
-                tl_qtn = [1,5, 10, 15]\n
-                tl_func = list(range(6))\n
+                firstLayer_qtn = [1,10, 30, 50]\n
+                firstLayer_func = list(range(6))\n              
+                secondLayer_qtn = [1,10, 30, 50]\n
+                secondLayer_func = list(range(6))\n
+                thirdLayer_qtn = [1,5, 10, 15]\n
+                thirdLayer_func = list(range(6))\n
                 optimizer = list(range(4))\n
                 epochs = list(range(3))\n
-                searchSpace = [fl_qtn, fl_func, sl_qtn, sl_func, tl_qtn, tl_func, optimizer, epochs]
+                searchSpace = [firstLayer_qtn, firstLayer_func, secondLayer_qtn, secondLayer_func, thirdLayer_qtn, thirdLayer_func, optimizer, epochs]
         """
 
         self._activations = activations
@@ -120,9 +120,21 @@ class ACOLSTM:
         
         def fitnessFunction(X, *args):
             fitedmodel = self.fitModel(X)
+            if self._verbose:
+                print(fitedmodel.summary())
+                
             y_hat = fitedmodel.predict(self._X_test)
-            fitness = MAE(y_hat, self._y_test)
+            try:
+                fitness = MAE(y_hat, self._y_test)
+            except:
+                fitness = sys.maxsize
+                pass
             return fitness
+
+        searchSpace = [Layers_Qtd[0], list(range(len(self._activations))),
+                       Layers_Qtd[1], list(range(len(self._activations))),
+                       Layers_Qtd[2], list(range(len(self._activations))),
+                       list(range(len(self._optimizers))), list(range(len(self._epochs)))]
         
         warnings.filterwarnings("ignore") # specify to ignore warning messages
         ACOsearch = self.setACO()
