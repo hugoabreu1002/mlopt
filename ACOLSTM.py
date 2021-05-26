@@ -1,19 +1,20 @@
 from keras.models import Sequential
-from keras.layers import LSTM, Dense, LayerNormalization, Conv1D, Reshape, Input
+from keras.layers import LSTM, Dense, LayerNormalization, Conv1D, BatchNormalization, Dropout, Flatten
 from keras import backend as K
 from mlopt.ACO import ACO
 from sklearn.metrics import mean_absolute_error as MAE
 import warnings
 import numpy as np
 import warnings
-import traceback
-import sys
 
 class ACOLSTM:
     """
-        X: X for lstm.
-        
-        y: y for lstm.
+        X_train: X_train for lstm.
+        y_train: y_train for lstm.
+        X_test: X_test for lstm.
+        y_test: y_test for lstm.
+
+        n_variables: equal to y_test.shape[1]
         
         train_test_split: division in train and test for X and y in lstm training and test.
     
@@ -57,8 +58,8 @@ class ACOLSTM:
         
         model.add(LSTM(units=parameters['sl_qtn'], activation=parameters['sl_func'], return_sequences=True,
                     recurrent_activation=parameters['fl_func']))
-        model.add(LayerNormalization())
-        
+
+        model.add(Flatten())
         model.add(Dense(units=parameters['tl_qtn'], activation=parameters['tl_func']))
         model.add(Dense(self._y_train.shape[1]))
         
@@ -67,10 +68,10 @@ class ACOLSTM:
         return model
     
     def fitModel(self, X):
-        search_parameters={'fl_qtn':X[0],'fl_func':self._activations[X[1]],
-                           'sl_qtn':X[2],'sl_func':self._activations[X[3]],
-                           'tl_qtn':X[4],'tl_func':self._activations[X[5]],
-                           'optimizer':self._optimizers[X[6]]}
+        search_parameters={'fl_qtn':X[0],'fl_func':self._activations[X[1]],'fl_refunc':self._activations[X[2]],
+                           'sl_qtn':X[3],'sl_func':self._activations[X[3]],'sl_refunc':self._activations[X[4]],
+                           'tl_qtn':X[5],'tl_func':self._activations[X[6]],
+                           'optimizer':self._optimizers[X[7]]}
         
         setedModel = self.setModel(search_parameters)
 
@@ -82,10 +83,23 @@ class ACOLSTM:
         if np.isnan(np.sum(self._y_train)):
             raise("y train has nan")
 
-        setedModel.fit(self._X_train, self._y_train, epochs=self._epochs[X[7]], verbose=self._verbose, shuffle=False,
+        setedModel.fit(self._X_train, self._y_train, epochs=self._epochs[X[8]], verbose=self._verbose, shuffle=False,
                    use_multiprocessing=True)
         
         return setedModel
+
+    def _fitnessFunction(self, X, *args):
+        fitedmodel = self.fitModel(X)
+        if self._verbose:
+            print(fitedmodel.summary())
+            
+        y_hat = fitedmodel.predict(self._X_test)[:,0]
+        if np.isnan(np.sum(y_hat)):
+            fitness = 1000
+        else:
+            print("SHAPES output hat: {0} and test: {1}".format(y_hat.shape, self._y_test[:,0].shape))
+            fitness = MAE(y_hat, self._y_test[:,0])
+        return fitness
     
     def optimize(self, Layers_Qtd=[[10, 14, 18, 22], [6, 8, 10], [1, 2, 4]],
                  activations=['elu', 'selu', 'tanh', 'relu', 'linear', 'sigmoid'],
@@ -106,21 +120,8 @@ class ACOLSTM:
         self._activations = activations
         self._optimizers = optimizers
         self._epochs = epochs
-        
-        def fitnessFunction(X, *args):
-            fitedmodel = self.fitModel(X)
-            if self._verbose:
-                print(fitedmodel.summary())
-                
-            y_hat = fitedmodel.predict(self._X_test)[:,0]
-            if np.isnan(np.sum(y_hat)):
-                fitness = sys.maxsize
-            else:
-                fitness = MAE(y_hat, self._y_test[:,0])
-            return fitness
-
-        searchSpace = [Layers_Qtd[0], list(range(len(self._activations))),
-                       Layers_Qtd[1], list(range(len(self._activations))),
+        searchSpace = [Layers_Qtd[0], list(range(len(self._activations))), list(range(len(self._activations))), 
+                       Layers_Qtd[1], list(range(len(self._activations))), list(range(len(self._activations))),
                        Layers_Qtd[2], list(range(len(self._activations))),
                        list(range(len(self._optimizers))), list(range(len(self._epochs)))]
         
@@ -129,11 +130,11 @@ class ACOLSTM:
         self._best_result, self._best_result_fitness = ACOsearch.optimize(self._options_ACO['antNumber'],
                                                                           self._options_ACO['antTours'],
                                                                           dimentionsRanges=searchSpace,
-                                                                          function=fitnessFunction,
+                                                                          function=self._fitnessFunction,
                                                                           verbose=self._verbose)
         
         finalFitedModel = self.fitModel(self._best_result)
-        y_hat = finalFitedModel.predict(self._X_test)
+        y_hat = finalFitedModel.predict(self._X_test)[:,0]
         
         return finalFitedModel, y_hat
 
@@ -158,23 +159,21 @@ class ACOCLSTM(ACOLSTM):
         #model.add(Input(shape=(self._X_train.shape[1], self._n_variables)))
         model.add(Conv1D(filters=parameters['conv_fl_filters_qtn'], kernel_size=(int(parameters['conv_fl_kernel_sz'])),
                          padding='same'))
-        model.add(LayerNormalization())
         model.add(Conv1D(filters=parameters['conv_sl_filters_qtn'], kernel_size=(int(parameters['conv_sl_kernel_sz'])),
                          padding='same'))
-        model.add(Conv1D(filters=parameters['conv_tl_filters_qtn'], kernel_size=(int(parameters['conv_tl_kernel_sz'])),
-                         padding='same'))
+        model.add(BatchNormalization())
+        model.add(Dropout(0.2))
 
-        #model.add(Reshape((self._X_train.shape[1], self._n_variables)))        
         model.add(LSTM(units=parameters['fl_qtn'], activation=parameters['fl_func'],
-                       recurrent_activation=parameters['fl_func'],
+                       recurrent_activation=parameters['fl_refunc'],
                        return_sequences=True))
         model.add(LayerNormalization())
         
         model.add(LSTM(units=parameters['sl_qtn'], activation=parameters['sl_func'],
-                    recurrent_activation=parameters['fl_func'],
+                    recurrent_activation=parameters['fl_refunc'],
                     return_sequences=True))
-        model.add(LayerNormalization())
-        
+
+        model.add(Flatten())
         model.add(Dense(units=parameters['tl_qtn'], activation=parameters['tl_func']))
         model.add(Dense(self._y_train.shape[1]))
         
@@ -185,9 +184,8 @@ class ACOCLSTM(ACOLSTM):
     def fitModel(self, X):
         search_parameters={'conv_fl_filters_qtn':X[0], 'conv_fl_kernel_sz':X[1],
                            'conv_sl_filters_qtn':X[2], 'conv_sl_kernel_sz':X[3],
-                           'conv_tl_filters_qtn':X[4], 'conv_tl_kernel_sz':X[5],
-                           'fl_qtn':X[6],'fl_func':self._activations[X[7]],
-                           'sl_qtn':X[8],'sl_func':self._activations[X[9]],
+                           'fl_qtn':X[4],'fl_func':self._activations[X[5]], 'fl_refunc':self._activations[X[6]],
+                           'sl_qtn':X[7],'sl_func':self._activations[X[8]], 'sl_refunc':self._activations[X[9]],
                            'tl_qtn':X[10],'tl_func':self._activations[X[11]],
                            'optimizer':self._optimizers[X[12]]}
         
@@ -206,18 +204,18 @@ class ACOCLSTM(ACOLSTM):
         
         return setedModel
     
-    def optimize(self, Layers_Qtd=[[10, 14, 18, 22], [6, 8, 10], [1, 2, 4], 
+    def optimize(self, Layers_Qtd=[[10, 14, 18, 22], [6, 8, 10], 
                                    [10, 14, 18, 22], [6, 8, 10], [1, 2, 4]], 
-                 ConvKernels=[[8,12],[4,6],[2,4]],
+                 ConvKernels=[[8,12],[4,6]],
                  activations=['elu', 'selu', 'tanh', 'relu', 'linear', 'sigmoid'],
                  optimizers=['SGD', 'adam', 'rmsprop','Adagrad'],
                  epochs = [100,200,300]):
         """
-            Layers_Qtd are the layers number of elements in each of the three layers to be search.
-            As a list of list. E.G: [[10, 14, 18, 22], [6, 8, 10], [1, 2, 4]]. The first three layers corresponds
+            Layers_Qtd are the layers number of elements in each layers to be search.
+            As a list of list. E.G: [[10, 14, 18, 22], [6, 8, 10], [10, 14, 18, 22], [6, 8, 10], [1, 2, 4]]. The first two layers corresponds
             to number of filters in Conv1d layers.
 
-            ConvKernels are the size of Conv1D kernels (first three layers).
+            ConvKernels are the size of Conv1D kernels (first two layers). E.G: [[8,12],[4,6]]
 
             First layer will be searched in ACO with number of elements as Layers_Qtd[0]... and so on
                                
@@ -230,25 +228,11 @@ class ACOCLSTM(ACOLSTM):
         self._activations = activations
         self._optimizers = optimizers
         self._epochs = epochs
-        
-        def fitnessFunction(X, *args):
-            fitedmodel = self.fitModel(X)
-            if self._verbose:
-                print(fitedmodel.summary())
-                
-            y_hat = fitedmodel.predict(self._X_test)[:,0]
-            if np.isnan(np.sum(y_hat)):
-                fitness = sys.maxsize
-            else:
-                fitness = MAE(y_hat, self._y_test[:,0])
-            return fitness
-
         searchSpace = [Layers_Qtd[0], ConvKernels[0],
                        Layers_Qtd[1], ConvKernels[1],
-                       Layers_Qtd[2], ConvKernels[2],
-                       Layers_Qtd[3], list(range(len(self._activations))),
+                       Layers_Qtd[2], list(range(len(self._activations))),list(range(len(self._activations))),
+                       Layers_Qtd[3], list(range(len(self._activations))),list(range(len(self._activations))), 
                        Layers_Qtd[4], list(range(len(self._activations))),
-                       Layers_Qtd[5], list(range(len(self._activations))),
                        list(range(len(self._optimizers))), list(range(len(self._epochs)))]
         
         warnings.filterwarnings("ignore") # specify to ignore warning messages
@@ -256,10 +240,10 @@ class ACOCLSTM(ACOLSTM):
         self._best_result, self._best_result_fitness = ACOsearch.optimize(self._options_ACO['antNumber'],
                                                                           self._options_ACO['antTours'],
                                                                           dimentionsRanges=searchSpace,
-                                                                          function=fitnessFunction,
+                                                                          function=self._fitnessFunction,
                                                                           verbose=self._verbose)
         
         finalFitedModel = self.fitModel(self._best_result)
-        y_hat = finalFitedModel.predict(self._X_test)
+        y_hat = finalFitedModel.predict(self._X_test)[:,0]
         
         return finalFitedModel, y_hat

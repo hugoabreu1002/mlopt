@@ -18,13 +18,6 @@ rotatingHandler = RotatingFileHandler(filename='timeSeriesUtils.log', encoding=N
 rotatingHandler.setLevel(logging.INFO)
 logging.getLogger('').addHandler(rotatingHandler)
 
-def MAPE(y_pred, y_true):
-    """
-        (y_pred, y_true)
-    """
-    mask = y_true != 0
-    return (np.fabs(y_true - y_pred)/y_true)[mask].mean()
-
 def train_test_split(serie, num_lags, tr_vd_ts_percents = [80, 20], print_shapes = False):
     """
         Slipts a time series to train and test Data.

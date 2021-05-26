@@ -122,6 +122,14 @@ class ACO(object):
                     
                 Dij[i_index, 0] = Ci
                 Dij[j_index, 0] = Cj
+
+                # area near i_index and j_index are affect too
+                if (i_index > j_index):
+                    for near_a in range(i_index - j_index):
+                        Dij[j_index+near_a, 0] = (Ci-Cj)/(i_index - j_index) * near_a + Cj
+                else:
+                    for near_a in range(j_index - i_index):
+                        Dij[i_index+near_a, 0] = (Ci-Cj)/(i_index - j_index) * near_a + Ci
             
             else:
                 Dij[j_index, 0] = sys.maxsize
