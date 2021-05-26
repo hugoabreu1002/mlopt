@@ -7,6 +7,7 @@ import warnings
 import numpy as np
 import warnings
 
+#TODO durante ACO pesquisar com menos epocas
 class ACOLSTM:
     """
         X_train: X_train for lstm.
