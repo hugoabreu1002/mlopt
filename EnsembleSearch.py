@@ -28,6 +28,7 @@ class EnsembleSearch:
         self._verbose = verbose
         self._alpha_stop = alpha_stop
         self._prob_mut = prob_mut
+        self._population = None
 
     def gen_population(self):
 
@@ -161,23 +162,23 @@ class EnsembleSearch:
         return to_break
 
     def search_best(self):
-        population = self.gen_population()
-        population = self.set_fitness(population)
-        population.sort(key = lambda x: x[-1])  
-        self._fitness_array = np.append(self._fitness_array, population[0][-1])
-        self._best_of_all = population[0][-2]
+        self._population = self.gen_population()
+        self._population = self.set_fitness(self._population)
+        self._population.sort(key = lambda x: x[-1])  
+        self._fitness_array = np.append(self._fitness_array, self._population[0][-1])
+        self._best_of_all = self._population[0][-2]
         
         for i in tqdm(range(self._epochs)):
-            population = self.next_population(population)
-            population = self.set_fitness(population)
-            population.sort(key = lambda x: x[-1])
+            self._population = self.next_population(self._population)
+            self._population = self.set_fitness(self._population)
+            self._population.sort(key = lambda x: x[-1])
             
             #pegar o melhor de todas as épocas
-            if population[0][-1] < min(self._fitness_array):
-                self._best_of_all = population[0][-2]
+            if self._population[0][-1] < min(self._fitness_array):
+                self._best_of_all = self._population[0][-2]
             
             #adicionar ao array de fitness o atual
-            self._fitness_array = np.append(self._fitness_array, population[0][-1])
+            self._fitness_array = np.append(self._fitness_array, self._population[0][-1])
 
             if self.early_stop():
                 break
