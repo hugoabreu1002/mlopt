@@ -83,10 +83,11 @@ class MMFFBleding:
 
 class AGMMFFBleding(MMFFBleding):
 
-    def __init__(self, X_train, y_train, X_test, y_test, models, blender = DecisionTreeRegressor(), epochs=5, size_pop=40):
-        models = None
-        EnsembleSearch(X_test, y_train, X_test, y_test, epochs=epochs, size_pop=size_pop)
-        models = EnsembleSearch.search_best()._best_of_all.estimators_
-        super().__init__(X_train, y_train, X_test, y_test, models, blender=blender)
+    def __init__(self, X_train, y_train, X_test, y_test, blender = DecisionTreeRegressor(), epochs=5, size_pop=40):
+        ensembleSearch = EnsembleSearch(X_train, y_train, X_test, y_test, epochs=epochs, size_pop=size_pop, verbose=False)
+        bestVotingRegressor = ensembleSearch.search_best()._best_of_all
+        print("Regressors chosen:")
+        print(bestVotingRegressor.named_estimators_.items())
+        super().__init__(X_train, y_train, X_test, y_test, models=bestVotingRegressor.named_estimators_.items(), blender=blender)
         
     
