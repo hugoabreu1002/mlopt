@@ -15,7 +15,7 @@ class ACOLSTM:
         X_test: X_test for lstm.
         y_test: y_test for lstm.
 
-        n_variables: equal to y_test.shape[1]
+        n_variables: N variables to be predicted, equals to y_test.shape[1]
         
         train_test_split: division in train and test for X and y in lstm training and test.
     
