@@ -4,7 +4,6 @@ from sklearn.svm import SVR
 from sklearn.ensemble import AdaBoostRegressor as ADA
 from sklearn.ensemble import BaggingRegressor as BAG
 from sklearn.ensemble import GradientBoostingRegressor as GBR
-from sklearn.linear_model import RANSACRegressor as RAN
 from sklearn.linear_model import PassiveAggressiveRegressor as PAR
 from sklearn.linear_model import SGDRegressor as SGD
 from sklearn.ensemble import VotingRegressor
@@ -59,8 +58,6 @@ class EnsembleSearch:
                           'min_samples_leaf':np.random.randint(2,10),     
                           'min_weight_fraction_leaf':np.random.rand(1)[0]/2}]
             
-            content_RAN = ['RAN',RAN(), {}, np.inf]
-            
             content_PAR = ['PAR',PAR(), 
                          {'C': np.random.randint(1,10), 'early_stopping':True,        
                           'n_iter_no_change':np.random.randint(1,10)}]
@@ -68,7 +65,7 @@ class EnsembleSearch:
             content_SGD = ['SGD',SGD(), {'penalty':random.choice(['l2', 'l1', 'elasticnet']),
                                        'n_iter_no_change':np.random.randint(1,10)}]
             
-            list_regressors_content = [content_RFR,content_SVR,content_ADA,content_BAG,content_GBR,content_RAN,content_PAR,content_SGD]
+            list_regressors_content = [content_RFR,content_SVR,content_ADA,content_BAG,content_GBR,content_PAR,content_SGD]
             
             weights = np.random.random(size=len(list_regressors_content))
             
