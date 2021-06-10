@@ -71,12 +71,14 @@ class MMFFBleding:
 
         return self._blender
 
-    def predict(self, X_test, blender=None):
+    def predict(self, X_test, blender=None, models=None):
         # make a prediction on a new row of data
         if blender == None:
-            yhat = self.predict_ensemble(self._models, self._blender, X_test)
-        else:
-            yhat = self.predict_ensemble(self._models, blender, X_test)
+            blender = self._blender
+        if models == None:
+            models = self._models
+                
+        yhat = self.predict_ensemble(models, blender, X_test)
 
         return yhat
 
@@ -97,7 +99,6 @@ class AGMMFFBleding(MMFFBleding):
         print('Train: %s, Test: %s' % (self._X_train.shape, self._X_test.shape))
         # train the blending ensemble
         self._blender = self.fit_ensemble(self._models)
-
-        return self._blender
+        return models, self._blender
         
     

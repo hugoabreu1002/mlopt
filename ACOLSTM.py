@@ -70,9 +70,9 @@ class ACOLSTM:
     
     def fitModel(self, X):
         search_parameters={'fl_qtn':X[0],'fl_func':self._activations[X[1]],'fl_refunc':self._activations[X[2]],
-                           'sl_qtn':X[3],'sl_func':self._activations[X[3]],'sl_refunc':self._activations[X[4]],
-                           'tl_qtn':X[5],'tl_func':self._activations[X[6]],
-                           'optimizer':self._optimizers[X[7]]}
+                           'sl_qtn':X[3],'sl_func':self._activations[X[4]],'sl_refunc':self._activations[X[5]],
+                           'tl_qtn':X[6],'tl_func':self._activations[X[7]],
+                           'optimizer':self._optimizers[X[8]]}
         
         setedModel = self.setModel(search_parameters)
 
@@ -84,7 +84,7 @@ class ACOLSTM:
         if np.isnan(np.sum(self._y_train)):
             raise("y train has nan")
 
-        setedModel.fit(self._X_train, self._y_train, epochs=self._epochs[X[8]], verbose=self._verbose, shuffle=False,
+        setedModel.fit(self._X_train, self._y_train, epochs=self._epochs[X[9]], verbose=self._verbose, shuffle=False,
                    use_multiprocessing=True)
         
         return setedModel

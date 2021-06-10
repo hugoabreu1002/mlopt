@@ -18,12 +18,20 @@ rotatingHandler = RotatingFileHandler(filename='timeSeriesUtils.log', encoding=N
 rotatingHandler.setLevel(logging.INFO)
 logging.getLogger('').addHandler(rotatingHandler)
 
-def MAPE(y_true, y_pred):
+def SMAPE(A, F):
     """
         (y_true, y_pred)
     """
-    mask = y_true != 0
-    return (np.fabs(y_true - y_pred)/y_true)[mask].mean()
+    tmp = 2 * np.abs(F - A) / (np.abs(A) + np.abs(F))
+    len_ = np.count_nonzero(~np.isnan(tmp))
+    if len_ == 0 and np.nansum(tmp) == 0: # Deals with a special case
+        return 100
+    return 100 / len_ * np.nansum(tmp)
+
+
+def MAPE(y_true, y_pred): 
+    y_true, y_pred = np.array(y_true), np.array(y_pred)
+    return np.mean(np.abs((y_true - y_pred) / y_true))
 
 def train_test_split(serie, num_lags, tr_vd_ts_percents = [80, 20], print_shapes = False):
     """
