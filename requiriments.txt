@@ -7,3 +7,6 @@ statsmodels
 pandas
 matplotlib
 sparse
+tensorflow
+autokeras
+tpot
