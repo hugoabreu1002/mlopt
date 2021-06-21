@@ -1,6 +1,7 @@
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, LayerNormalization, Conv1D, BatchNormalization, Dropout, Flatten
 from tensorflow.keras import backend as K
+from tensorflow.keras.callbacks import EarlyStopping
 from mlopt.ACO import ACO
 from sklearn.metrics import mean_absolute_error as MAE
 import warnings
@@ -84,8 +85,10 @@ class ACOLSTM:
         if np.isnan(np.sum(self._y_train)):
             raise("y train has nan")
 
-        setedModel.fit(self._X_train, self._y_train, epochs=self._epochs[X[9]], verbose=self._verbose, shuffle=False,
-                   use_multiprocessing=True)
+        # simple early stopping
+        es = EarlyStopping(monitor='loss', mode='auto', patience=20, verbose=1)
+        setedModel.fit(self._X_train, self._y_train, epochs=self._epochs[X[9]], shuffle=False,
+                   use_multiprocessing=True, callbacks=[es], verbose=1)
         
         return setedModel
 
@@ -200,8 +203,9 @@ class ACOCLSTM(ACOLSTM):
         if np.isnan(np.sum(self._y_train)):
             raise("y train has nan")
 
-        setedModel.fit(self._X_train, self._y_train, epochs=self._epochs[X[13]], verbose=self._verbose, shuffle=False,
-                   use_multiprocessing=True)
+        es = EarlyStopping(monitor='loss', mode='auto', patience=20, verbose=1)
+        setedModel.fit(self._X_train, self._y_train, epochs=self._epochs[X[13]], verbose=1, shuffle=False,
+                   use_multiprocessing=True, callbacks=[es])
         
         return setedModel
     

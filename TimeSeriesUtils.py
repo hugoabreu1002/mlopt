@@ -28,10 +28,10 @@ def SMAPE(A, F):
         return 100
     return 100 / len_ * np.nansum(tmp)
 
-
-def MAPE(y_true, y_pred): 
+def MAPE(y_true, y_pred):
     y_true, y_pred = np.array(y_true), np.array(y_pred)
-    return np.mean(np.abs((y_true - y_pred) / y_true))
+    mask_non_zero = y_true != 0
+    return np.mean(np.abs((y_true[mask_non_zero] - y_pred[mask_non_zero]) / y_true[mask_non_zero]))
 
 def train_test_split(serie, num_lags, tr_vd_ts_percents = [80, 20], print_shapes = False):
     """
