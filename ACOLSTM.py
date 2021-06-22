@@ -86,9 +86,9 @@ class ACOLSTM:
             raise("y train has nan")
 
         # simple early stopping
-        es = EarlyStopping(monitor='loss', mode='auto', patience=20, verbose=1)
+        es = EarlyStopping(monitor='loss', mode='auto', patience=5, verbose=1)
         setedModel.fit(self._X_train, self._y_train, epochs=self._epochs[X[9]], shuffle=False,
-                   use_multiprocessing=True, callbacks=[es], verbose=1)
+                   use_multiprocessing=True, callbacks=[es], verbose=0)
         
         return setedModel
 
@@ -203,8 +203,8 @@ class ACOCLSTM(ACOLSTM):
         if np.isnan(np.sum(self._y_train)):
             raise("y train has nan")
 
-        es = EarlyStopping(monitor='loss', mode='auto', patience=20, verbose=1)
-        setedModel.fit(self._X_train, self._y_train, epochs=self._epochs[X[13]], verbose=1, shuffle=False,
+        es = EarlyStopping(monitor='loss', mode='auto', patience=5, verbose=1)
+        setedModel.fit(self._X_train, self._y_train, epochs=self._epochs[X[13]], verbose=0, shuffle=False,
                    use_multiprocessing=True, callbacks=[es])
         
         return setedModel
