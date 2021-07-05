@@ -116,7 +116,7 @@ class EnsembleSearch:
             if np.random.rand() > (1 - self._prob_mut):
                 randomRegsQt = np.random.randint(low=0,high=qtRegressors)
                 for _ in range(randomRegsQt):
-                    # crossonly the same regressors
+                    # cross only the same regressors
                     # worse index i receives from better index i-1
                     randomSample = np.random.randint(low=0,high=qtRegressors)
                     population[badParent][1][randomSample] = population[goodParent][1][randomSample]
