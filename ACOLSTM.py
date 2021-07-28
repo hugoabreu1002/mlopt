@@ -8,7 +8,6 @@ import warnings
 import numpy as np
 import warnings
 
-#TODO durante ACO pesquisar com menos epocas
 class ACOLSTM:
     """
         X_train: X_train for lstm.
@@ -69,7 +68,7 @@ class ACOLSTM:
             
         return model
     
-    def fitModel(self, X):
+    def fitModel(self, X, early_stop=True):
         search_parameters={'fl_qtn':X[0],'fl_func':self._activations[X[1]],'fl_refunc':self._activations[X[2]],
                            'sl_qtn':X[3],'sl_func':self._activations[X[4]],'sl_refunc':self._activations[X[5]],
                            'tl_qtn':X[6],'tl_func':self._activations[X[7]],
@@ -86,9 +85,14 @@ class ACOLSTM:
             raise("y train has nan")
 
         # simple early stopping
-        es = EarlyStopping(monitor='loss', mode='auto', patience=5, verbose=1)
+        if early_stop:
+            es = EarlyStopping(monitor='loss', mode='auto', patience=5, verbose=1)
+        else:
+            es = EarlyStopping(monitor='loss', mode='auto', patience=100, verbose=1)
+
         setedModel.fit(self._X_train, self._y_train, epochs=self._epochs[X[9]], shuffle=False,
-                   use_multiprocessing=True, callbacks=[es], verbose=0)
+                            use_multiprocessing=True, callbacks=[es], verbose=self._verbose)
+
         
         return setedModel
 
@@ -105,7 +109,7 @@ class ACOLSTM:
             fitness = MAE(y_hat, self._y_test[:,0])
         return fitness
     
-    def optimize(self, Layers_Qtd=[[10, 14, 18, 22], [6, 8, 10], [1, 2, 4]],
+    def optimize(self, Layers_Qtd=[[14, 18, 22], [6, 8, 10], [1, 2, 4]],
                  activations=['elu', 'selu', 'tanh', 'relu', 'linear', 'sigmoid'],
                  optimizers=['SGD', 'adam', 'rmsprop','Adagrad'],
                  epochs = [100,200,300]):
@@ -137,7 +141,7 @@ class ACOLSTM:
                                                                           function=self._fitnessFunction,
                                                                           verbose=self._verbose)
         
-        finalFitedModel = self.fitModel(self._best_result)
+        finalFitedModel = self.fitModel(self._best_result, early_stop=False)
         y_hat = finalFitedModel.predict(self._X_test)[:,0]
         
         return finalFitedModel, y_hat
@@ -203,8 +207,12 @@ class ACOCLSTM(ACOLSTM):
         if np.isnan(np.sum(self._y_train)):
             raise("y train has nan")
 
-        es = EarlyStopping(monitor='loss', mode='auto', patience=5, verbose=1)
-        setedModel.fit(self._X_train, self._y_train, epochs=self._epochs[X[13]], verbose=0, shuffle=False,
+        if early_stop:
+            es = EarlyStopping(monitor='loss', mode='auto', patience=5, verbose=1)
+        else:
+            es = EarlyStopping(monitor='loss', mode='auto', patience=100, verbose=1)
+            
+        setedModel.fit(self._X_train, self._y_train, epochs=self._epochs[X[13]], verbose=self._verbose, shuffle=False,
                    use_multiprocessing=True, callbacks=[es])
         
         return setedModel
