@@ -1,4 +1,4 @@
-# MachineLearning-OPTimization-Algorithms
+# MachineLearning-OPTimized-Algorithms
 
 Here I will keep the Algorithms that I wrote, or cool examples with packages that I found on web.
 
