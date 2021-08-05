@@ -1,8 +1,6 @@
 import pickle
-from mlopt.TimeSeriesUtils import train_test_split_with_Exog, SMAPE
-from mlopt.TimeSeriesUtils import train_test_split as train_test_split_noExog
-import pandas as pd
-from sklearn.preprocessing import MaxAbsScaler
+from TimeSeriesUtils import train_test_split_with_Exog, SMAPE
+from TimeSeriesUtils import train_test_split as train_test_split_noExog
 import argparse
 import tpot
 from sklearn.metrics import mean_absolute_error, mean_squared_error
@@ -12,19 +10,19 @@ from hyperopt import tpe
 import autokeras as ak
 import os
 from matplotlib import pyplot as plt
-import warnings
 import tensorflow as tf
 import numpy as np
-from mlopt.ACOLSTM import ACOLSTM, ACOCLSTM
-from mlopt.MMFFBleding_Regressor import AGMMFFBleding
+from ACOLSTM import ACOLSTM, ACOCLSTM
+from MMFFBleding_Regressor import AGMMFFBleding
 import traceback
 import datetime
 
+#TODO Docsctrings
 class TimeSeriesTester():
     def __init__(self) -> None:
         pass
 
-    def applyTPOT(X_train, y_train, X_test, y_test, SavePath, popSize=20,
+    def applyTPOT(self, X_train, y_train, X_test, y_test, SavePath, popSize=20,
                 number_Generations=5, kFolders=0, TPOTSingleMinutes=1,
                 TPOTFullMinutes = 10, useSavedModels = True):
         if not useSavedModels or not os.path.isfile(SavePath):
@@ -47,7 +45,7 @@ class TimeSeriesTester():
             
         return y_hat
 
-    def applyHPSKLEARN(X_train, y_train, X_test, y_test, SavePath,
+    def applyHPSKLEARN(self, X_train, y_train, X_test, y_test, SavePath,
                     max_evals=100, trial_timeout=100, useSavedModels = True):
 
         if not useSavedModels or not os.path.isfile(SavePath+".pckl"):
@@ -73,7 +71,7 @@ class TimeSeriesTester():
         
         return y_hat
         
-    def applyAutoKeras(X_train, y_train, X_test, y_test, SavePath,
+    def applyAutoKeras(self, X_train, y_train, X_test, y_test, SavePath,
                     max_trials=100, epochs=300, useSavedModels = True):
 
         if not useSavedModels or not os.path.isdir(SavePath+"/keras_auto_model/best_model/"):
@@ -101,7 +99,7 @@ class TimeSeriesTester():
             
         return y_hat
 
-    def applyACOLSTM(X_train, y_train, X_test, y_test, SavePath,
+    def applyACOLSTM(self, X_train, y_train, X_test, y_test, SavePath,
                     Layers_Qtd=[[40, 50, 60, 70], [20, 25, 30], [5, 10, 15]],
                     epochs=[100,200,300],
                     options_ACO={'antNumber':5, 'antTours':5, 'alpha':1, 'beta':1, 'rho':0.5, 'Q':1},
@@ -126,7 +124,7 @@ class TimeSeriesTester():
 
         return y_hat
 
-    def applyACOCLSTM(X_train, y_train, X_test, y_test, SavePath,
+    def applyACOCLSTM(self, X_train, y_train, X_test, y_test, SavePath,
                     Layers_Qtd=[[50, 30, 20, 10], [20, 15, 10], [10, 20], [5, 10], [2, 4]],
                     ConvKernels=[[8, 12], [4, 6]],
                     epochs=[10],
@@ -151,7 +149,7 @@ class TimeSeriesTester():
 
         return y_hat
 
-    def applyGAMMFF(X_train, y_train, X_test, y_test, SavePath,
+    def applyGAMMFF(self, X_train, y_train, X_test, y_test, SavePath,
                     epochs=5, size_pop=40, useSavedModels = True):
 
         agMMGGBlending = AGMMFFBleding(X_train, y_train, X_test, y_test, epochs=epochs, size_pop=size_pop)
@@ -171,16 +169,10 @@ class TimeSeriesTester():
 
         return y_hat
 
-    def saveResults(df_inmet, genscaler, y_test, y_hats, labels, city_save_path, showPlot):
+    def saveResults(self, y_test, y_hats, labels, save_path, timestap_now):
         logResults = ""
         logResults += "Scores" + "\n"
         print("Scores")
-        
-        _, ax = plt.subplots(1,1, figsize=(14,7), dpi=300)
-        ticks_X = df_inmet.data.astype('str') + '-' + df_inmet.hora.astype('str')
-        len_dt = len(y_test)
-        ticks_X = ticks_X[-len_dt:].values
-        ax.plot(ticks_X, genscaler.inverse_transform(y_test.reshape(-1, 1)), 'k-o', label='Original', linewidth=2.0)
 
         for y_hat, plotlabel in zip(y_hats, labels):
             print("ploting... " + plotlabel)
@@ -188,52 +180,42 @@ class TimeSeriesTester():
             logResults += "{0} ".format(plotlabel) + "- MAPE: %.4f" % MAPE(y_test, y_hat) + "\n"
             logResults += "{0} ".format(plotlabel) + "- SMAPE: %.4f" % SMAPE(y_test, y_hat) + "\n"
             logResults += "{0} ".format(plotlabel) + "- MSE: %.4f" % mean_squared_error(y_test, y_hat) + "\n"
-            trueScale_yhat = genscaler.inverse_transform(y_hat[-len_dt:].reshape(-1, 1))
-            ax.plot(ticks_X, trueScale_yhat, '--o', label=plotlabel)
 
-        plt.xticks(ticks_X[::3], rotation=45, ha='right', fontsize=12)
-        ax.grid(axis='x')
-        ax.legend(fontsize=13)
-        ax.set_ylabel('W/m2', fontsize=14)
-        cidade = city_save_path.split("/")[2]
-        if cidade == "joaopessoa":
-            cidade = "João Pessoa"
-        elif cidade == "saoluis":
-            cidade = "São Luis"
-        elif cidade == "maceio":
-            cidade = "Maceió"
-        ax.set_title(cidade.capitalize(), fontsize=14)
-        timestamp_now = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        plt.tight_layout()
-        plt.savefig(city_save_path+"/AutoMLS_result_{0}.png".format(timestamp_now), dpi=300)
-
-        if showPlot:
-            plt.show()
-
-        with open(city_save_path+"/results_{0}.txt".format(timestamp_now), "w") as text_file:
+        with open(save_path+"/results_{0}.txt".format(timestap_now), "w") as text_file:
             text_file.write(logResults)
 
         print(logResults)
 
-    def executeTests(self, y_data, exog_data, train_test=[80,20], lags=24, autoMlsToExecute, plot=True, useSavedModels=True, useSavedArrays=True):
+    def executeTests(self, y_data, exog_data, autoMlsToExecute="All", train_test=[80,20],
+                     lags=24, useSavedModels=True, useSavedArrays=True,
+                     save_path="./TimeSeriesTester/"):
+        """
+            autoMlsToExecute="All"
 
-        X_train, y_train, X_test, y_test  = train_test_split_with_Exog(y_data[:,0], exog_data, lags, train_test)
+            or insert the automls in a list like autoMlsToExecute=["tpot", "hpsklearn", "autokeras", "agmmff", "acolstm", "acoclstm"]
+        """
+        X_train, y_train, X_test, y_test  = train_test_split_with_Exog(y_data, exog_data, lags, train_test)
+
+        timestamp_now = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
         y_hats = []
         labels = []
 
-        np.savetxt(city_save_path+"./y_test", y_test.reshape(-1, 1), delimiter=';')
+        if not os.path.exists(save_path):
+            os.mkdir(save_path)
 
-        if "tpot" in autoMlsToExecute:
+        np.savetxt(save_path+"./y_test_{0}".format(timestamp_now), y_test.reshape(-1, 1), delimiter=';')
+
+        if "tpot" in autoMlsToExecute or autoMlsToExecute=="All":
             try:
                 print("TPOT Evaluation...")
-                if not useSavedArrays or not os.path.isfile(city_save_path+"/y_hat_TPOT"):
-                    y_hat_tpot = applyTPOT(X_train, y_train, X_test, y_test, city_save_path+"/tpotModel_{0}".format(city),
+                if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_TPOT"):
+                    y_hat_tpot = self.applyTPOT(X_train, y_train, X_test, y_test, save_path+"/tpotModel_{0}".format(timestamp_now),
                                         popSize=10, number_Generations=10,
                                         useSavedModels = useSavedModels)
-                    np.savetxt(city_save_path+"/y_hat_TPOT", y_hat_tpot, delimiter=';')
+                    np.savetxt(save_path+"/y_hat_TPOT", y_hat_tpot, delimiter=';')
                 else:
-                    y_hat_tpot = np.loadtxt(city_save_path+"/y_hat_TPOT", delimiter=';')
+                    y_hat_tpot = np.loadtxt(save_path+"/y_hat_TPOT", delimiter=';')
                     
                 y_hats.append(y_hat_tpot)
                 labels.append("TPOT")
@@ -241,15 +223,15 @@ class TimeSeriesTester():
                 traceback.print_exc()
                 pass
 
-        if "hpsklearn" in autoMlsToExecute:    
+        if "hpsklearn" in autoMlsToExecute or autoMlsToExecute=="All":    
             try:
                 print("HPSKLEARN Evaluation...")
-                if not useSavedArrays or not os.path.isfile(city_save_path+"/y_hat_HPSKLEARN"):
-                    y_hat_HPSKLEARN = applyHPSKLEARN(X_train, y_train, X_test, y_test, city_save_path+"/HPSKLEARNModel_{0}".format(city),
+                if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_HPSKLEARN"):
+                    y_hat_HPSKLEARN = self.applyHPSKLEARN(X_train, y_train, X_test, y_test, save_path+"/HPSKLEARNModel_{0}".format(timestamp_now),
                                                 max_evals=100, useSavedModels = useSavedModels)
-                    np.savetxt(city_save_path+"/y_hat_HPSKLEARN", y_hat_HPSKLEARN, delimiter=';')
+                    np.savetxt(save_path+"/y_hat_HPSKLEARN", y_hat_HPSKLEARN, delimiter=';')
                 else:
-                    y_hat_HPSKLEARN = np.loadtxt(city_save_path+"/y_hat_HPSKLEARN", delimiter=';')
+                    y_hat_HPSKLEARN = np.loadtxt(save_path+"/y_hat_HPSKLEARN", delimiter=';')
 
                 y_hats.append(y_hat_HPSKLEARN)
                 labels.append("HPSKLEARN")
@@ -257,15 +239,15 @@ class TimeSeriesTester():
                 traceback.print_exc()
                 pass
 
-        if "autokeras" in autoMlsToExecute:
+        if "autokeras" in autoMlsToExecute or autoMlsToExecute=="All":
             try:
                 print("AUTOKERAS Evaluation...")
-                if not useSavedArrays or not os.path.isfile(city_save_path+"/y_hat_AUTOKERAS"):
-                    y_hat_autokeras = applyAutoKeras(X_train, y_train, X_test, y_test, city_save_path+"/autokerastModel_{0}".format(city),
+                if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_AUTOKERAS"):
+                    y_hat_autokeras = self.applyAutoKeras(X_train, y_train, X_test, y_test, save_path+"/autokerastModel_{0}".format(timestamp_now),
                                                 max_trials=10, epochs=300, useSavedModels = useSavedModels)
-                    np.savetxt(city_save_path+"/y_hat_AUTOKERAS", y_hat_autokeras, delimiter=';')
+                    np.savetxt(save_path+"/y_hat_AUTOKERAS", y_hat_autokeras, delimiter=';')
                 else:
-                    y_hat_autokeras = np.loadtxt(city_save_path+"/y_hat_AUTOKERAS", delimiter=';')
+                    y_hat_autokeras = np.loadtxt(save_path+"/y_hat_AUTOKERAS", delimiter=';')
                     
                 y_hats.append(y_hat_autokeras)
                 labels.append("AUTOKERAS")
@@ -273,16 +255,16 @@ class TimeSeriesTester():
                 traceback.print_exc()
                 pass
 
-        if "agmmff" in autoMlsToExecute:
+        if "agmmff" in autoMlsToExecute or autoMlsToExecute=="All":
             try:
                 print("AGMMFF Evaluation...")
-                if not useSavedArrays or not os.path.isfile(city_save_path+"/y_hat_AGMMFF"):
-                    y_hat_agmmff= applyGAMMFF( X_train, y_train, X_test, y_test,
-                                            city_save_path+"/mmffModel_{0}".format(city),
+                if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_AGMMFF"):
+                    y_hat_agmmff= self.applyGAMMFF( X_train, y_train, X_test, y_test,
+                                            save_path+"/mmffModel_{0}".format(timestamp_now),
                                             epochs=3, size_pop=20, useSavedModels = useSavedModels)
-                    np.savetxt(city_save_path+"/y_hat_AGMMFF", y_hat_agmmff, delimiter=';')
+                    np.savetxt(save_path+"/y_hat_AGMMFF", y_hat_agmmff, delimiter=';')
                 else:
-                    y_hat_agmmff = np.loadtxt(city_save_path+"/y_hat_AGMMFF", delimiter=';')
+                    y_hat_agmmff = np.loadtxt(save_path+"/y_hat_AGMMFF", delimiter=';')
 
                 print("SHAPE HAT {0}".format(y_hat_agmmff.shape))
                 y_hats.append(y_hat_agmmff)
@@ -291,43 +273,46 @@ class TimeSeriesTester():
                 traceback.print_exc()
                 pass
 
-        X_train_lstm, y_train_lstm, X_test_lstm, y_test_lstm = train_test_split_noExog(gen[:,0], 23,
+        ##################################################################################################
+        #################################### NO EXOG MODELS ##############################################    
+        ##################################################################################################
+        X_train_noexog, y_train_noexog, X_test_noexog, y_test_noexog = train_test_split_noExog(y_data, 23,
                                                                             tr_vd_ts_percents = [80, 20],
                                                                             print_shapes = useSavedModels)
         options_ACO={'antNumber':6, 'antTours':5, 'alpha':1, 'beta':1, 'rho':0.5, 'Q':1}
 
-        if "acolstm" in autoMlsToExecute:
+        if "acolstm" in autoMlsToExecute or autoMlsToExecute=="All":
             try:
                 print("ACOLSTM Evaluation...")
-                if not useSavedArrays or not os.path.isfile(city_save_path+"/y_hat_ACOLSTM"):
+                if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_ACOLSTM"):
                     Layers_Qtd=[[60, 40, 30], [20, 15], [10, 7, 5]]
                     epochs=[300]        
-                    y_hat_acolstm = applyACOLSTM(X_train_lstm, y_train_lstm, X_test_lstm, y_test_lstm,
-                                                city_save_path+"/acolstmModel_{0}".format(city),
+                    y_hat_acolstm = self.applyACOLSTM(X_train_noexog, y_train_noexog, X_test_noexog, y_test_noexog,
+                                                save_path+"/acolstmModel_{0}".format(timestamp_now),
                                                 Layers_Qtd, epochs, options_ACO, useSavedModels = useSavedModels)
-                    np.savetxt(city_save_path+"/y_hat_ACOLSTM", y_hat_acolstm, delimiter=';')
+                    np.savetxt(save_path+"/y_hat_ACOLSTM", y_hat_acolstm, delimiter=';')
                 else:
-                    y_hat_acolstm = np.loadtxt(city_save_path+"/y_hat_ACOLSTM", delimiter=';')
+                    y_hat_acolstm = np.loadtxt(save_path+"/y_hat_ACOLSTM", delimiter=';')
                 y_hats.append(y_hat_acolstm)
                 labels.append("ACOLSTM")
             except Exception:
                 traceback.print_exc()
                 pass
 
-        if "acoclstm" in autoMlsToExecute:
+        if "acoclstm" in autoMlsToExecute or autoMlsToExecute=="All":
             try:
                 print("ACOCLSTM Evaluation...")
-                if not useSavedArrays or not os.path.isfile(city_save_path+"/y_hat_ACOCLSTM"):
+                if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_ACOCLSTM"):
                     Layers_Qtd=[[60, 40], [30, 15], [60, 40, 30], [20, 15], [10, 7, 5]]
                     ConvKernels=[[8, 12], [6, 4]]
                     epochs=[300]
-                    y_hat_acoclstm = applyACOCLSTM(X_train_lstm, y_train_lstm, X_test_lstm, y_test_lstm,
-                                                city_save_path+"/acoclstmModel_{0}".format(city),
+                    y_hat_acoclstm = self.applyACOCLSTM(X_train_noexog, y_train_noexog, X_test_noexog, y_test_noexog,
+                                                save_path+"/acoclstmModel_{0}".format(timestamp_now),
                                                 Layers_Qtd, ConvKernels, epochs, options_ACO, useSavedModels = useSavedModels)
                         
-                    np.savetxt(city_save_path+"/y_hat_ACOCLSTM", y_hat_acoclstm, delimiter=';')
+                    np.savetxt(save_path+"/y_hat_ACOCLSTM", y_hat_acoclstm, delimiter=';')
                 else:
-                    y_hat_acoclstm = np.loadtxt(city_save_path+"/y_hat_ACOCLSTM", delimiter=';')
+                    y_hat_acoclstm = np.loadtxt(save_path+"/y_hat_ACOCLSTM", delimiter=';')
 
                 print("SHAPE HAT {0}".format(y_hat_acoclstm.shape))
                 y_hats.append(y_hat_acoclstm)
@@ -336,25 +321,4 @@ class TimeSeriesTester():
                 traceback.print_exc()
                 pass
 
-        saveResults(df_inmet, genscaler, y_test, y_hats, labels, city_save_path, showPlot = plot)
-
-    def str2bool(v):
-        if isinstance(v, bool):
-            return v
-        if v.lower() in ('yes', 'true', 't', 'y', '1'):
-            return True
-        elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-            return False
-        else:
-            raise argparse.ArgumentTypeError('Boolean value expected.')
-
-    def main(self, args):
-        citiesFolders = args.listaCidades
-        for city in citiesFolders:
-            self.executeTests(city, args.cidadesRootFolder,
-                        autoMlsToExecute = args.autoMls,
-                        plot = args.plot,
-                        useSavedModels = args.useSavedModels,
-                        useSavedArrays = args.useSavedArrays)
-        
-        return None
+        self.saveResults(y_test, y_hats, labels, save_path, timestamp_now)
