@@ -1,4 +1,4 @@
-# ML-OPT-IA-Algorithms
+# MachineLearning-OPTimization-Algorithms
 
 Here I will keep the Algorithms that I wrote, or cool examples with packages that I found on web.
 
