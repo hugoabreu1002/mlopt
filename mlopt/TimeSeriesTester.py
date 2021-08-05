@@ -1,7 +1,6 @@
 import pickle
 from TimeSeriesUtils import train_test_split_with_Exog, SMAPE
 from TimeSeriesUtils import train_test_split as train_test_split_noExog
-import argparse
 import tpot
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
@@ -9,13 +8,14 @@ from hpsklearn import HyperoptEstimator, any_regressor, any_preprocessing
 from hyperopt import tpe
 import autokeras as ak
 import os
-from matplotlib import pyplot as plt
 import tensorflow as tf
 import numpy as np
 from ACOLSTM import ACOLSTM, ACOCLSTM
 from MMFFBleding_Regressor import AGMMFFBleding
 import traceback
 import datetime
+from statsmodels.tsa.api import ExponentialSmoothing
+import pandas as pd
 
 #TODO Docsctrings
 class TimeSeriesTester():
@@ -169,6 +169,21 @@ class TimeSeriesTester():
 
         return y_hat
 
+    def applyETS(self, X_train, y_train, X_test, y_test, SavePath):
+        y_pos = np.concatenate([y_train, y_test]) + 0.01
+        fit1 = ExponentialSmoothing(y_pos, seasonal_periods=24, trend="add", seasonal="add",use_boxcox=False,initialization_method="estimated").fit()
+        fit2 = ExponentialSmoothing(y_pos,seasonal_periods=24,trend="add",seasonal="mul",use_boxcox=False,initialization_method="estimated").fit()
+        fit3 = ExponentialSmoothing(y_pos,seasonal_periods=24,trend="add",seasonal="add",damped_trend=True,use_boxcox=False,initialization_method="estimated",).fit()
+        fit4 = ExponentialSmoothing(y_pos,seasonal_periods=24,trend="add",seasonal="mul",damped_trend=True,use_boxcox=False,initialization_method="estimated").fit()
+        results = pd.DataFrame(index=[r"$\alpha$", r"$\beta$", r"$\phi$", r"$\gamma$", r"$l_0$", "$b_0$", "SSE (SUM OF SQUARED ERRORS)"])
+        params = ["smoothing_level","smoothing_trend","damping_trend","smoothing_seasonal","initial_level","initial_trend"]
+        results["Additive"] = [fit1.params[p] for p in params] + [fit1.sse]
+        results["Multiplicative"] = [fit2.params[p] for p in params] + [fit2.sse]
+        results["Additive Dam"] = [fit3.params[p] for p in params] + [fit3.sse]
+        results["Multiplica Dam"] = [fit4.params[p] for p in params] + [fit4.sse]
+        best = results.columns[results["SSE (SUM OF SQUARED ERRORS)"].argmin()]
+
+
     def saveResults(self, y_test, y_hats, labels, save_path, timestap_now):
         logResults = ""
         logResults += "Scores" + "\n"
@@ -320,5 +335,7 @@ class TimeSeriesTester():
             except Exception:
                 traceback.print_exc()
                 pass
+
+        
 
         self.saveResults(y_test, y_hats, labels, save_path, timestamp_now)
