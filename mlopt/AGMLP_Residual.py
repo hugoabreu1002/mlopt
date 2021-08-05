@@ -3,7 +3,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import VotingRegressor
 from sklearn.datasets import make_regression
 from sklearn import preprocessing
-from mlopt.AgMlp import AgMlp as Ag_mlp
+from .AgMlp import AgMlp as Ag_mlp
 import numpy as np
 import random
 from tqdm import tqdm

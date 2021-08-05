@@ -1,7 +1,7 @@
 from sklearn.metrics import mean_absolute_error as mae
 import numpy as np
-from mlopt.EnsembleSearch import EnsembleSearch
-from mlopt.AGMLP_Residual import AGMLP_Residual
+from .EnsembleSearch import EnsembleSearch
+from .AGMLP_Residual import AGMLP_Residual
 
 class AGEnsemble_Residual(AGMLP_Residual):
 

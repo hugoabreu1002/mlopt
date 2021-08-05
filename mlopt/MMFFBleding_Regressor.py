@@ -6,7 +6,7 @@ from sklearn.ensemble import RandomForestRegressor as RFR
 from sklearn.ensemble import GradientBoostingRegressor as GBR
 from sklearn.svm import SVR
 from sklearn.neural_network import MLPRegressor as MLP
-from mlopt.EnsembleSearch import EnsembleSearch
+from .EnsembleSearch import EnsembleSearch
 
 class MMFFBleding:
 

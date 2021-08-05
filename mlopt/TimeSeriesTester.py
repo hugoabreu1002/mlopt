@@ -1,6 +1,6 @@
 import pickle
-from TimeSeriesUtils import train_test_split_with_Exog, SMAPE
-from TimeSeriesUtils import train_test_split as train_test_split_noExog
+from .TimeSeriesUtils import train_test_split_with_Exog, SMAPE
+from .TimeSeriesUtils import train_test_split as train_test_split_noExog
 import tpot
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
@@ -10,8 +10,8 @@ import autokeras as ak
 import os
 import tensorflow as tf
 import numpy as np
-from ACOLSTM import ACOLSTM, ACOCLSTM
-from MMFFBleding_Regressor import AGMMFFBleding
+from .ACOLSTM import ACOLSTM, ACOCLSTM
+from .MMFFBleding_Regressor import AGMMFFBleding
 import traceback
 import datetime
 from statsmodels.tsa.api import ExponentialSmoothing

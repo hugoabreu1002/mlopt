@@ -3,7 +3,6 @@ from tqdm import tqdm
 from scipy.stats import mode
 import sys
 import itertools as it
-import os.path as path
 
 class ACO(object):
     """

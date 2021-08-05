@@ -1,7 +1,6 @@
 import numpy as np
 from tqdm import tqdm
 import random
-import math    # cos() for Rastrigin
 import copy    # array-copying convenience
 import sys     # max float
 
