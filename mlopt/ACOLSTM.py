@@ -96,7 +96,7 @@ class ACOLSTM:
         
         return setedModel
 
-    def _fitnessFunction(self, X, *args):
+    def _fitnessFunction(self, X):
         fitedmodel = self.fitModel(X)
         if self._verbose:
             print(fitedmodel.summary())
@@ -105,7 +105,6 @@ class ACOLSTM:
         if np.isnan(np.sum(y_hat)):
             fitness = 1000
         else:
-            print("SHAPES output hat: {0} and test: {1}".format(y_hat.shape, self._y_test[:,0].shape))
             fitness = MAE(y_hat, self._y_test[:,0])
         return fitness
     
