@@ -18,20 +18,26 @@ rotatingHandler = RotatingFileHandler(filename='timeSeriesUtils.log', encoding=N
 rotatingHandler.setLevel(logging.INFO)
 logging.getLogger('').addHandler(rotatingHandler)
 
-def SMAPE(A, F):
+def SMAPE(A, F, threshold=0):
     """
         (y_true, y_pred)
+        returns in percentage
     """
-    tmp = 2 * np.abs(F - A) / (np.abs(A) + np.abs(F))
+    mask_threshold = np.abs(A) >= threshold
+    tmp = 2 * np.abs(F[mask_threshold] - A[mask_threshold]) / (np.abs(A[mask_threshold]) + np.abs(F[mask_threshold]))
     len_ = np.count_nonzero(~np.isnan(tmp))
     if len_ == 0 and np.nansum(tmp) == 0: # Deals with a special case
         return 100
     return 100 / len_ * np.nansum(tmp)
 
 def MAPE(y_true, y_pred, threshold=0):
+    """
+        (y_true, y_pred)
+        returns in percentage
+    """
     y_true, y_pred = np.array(y_true), np.array(y_pred)
-    mask_non_zero = np.abs(y_true) >= threshold
-    return np.mean(np.abs((y_true[mask_non_zero] - y_pred[mask_non_zero]) / y_true[mask_non_zero]))
+    mask_threshold = np.abs(y_true) >= threshold
+    return 100*np.mean(np.abs((y_true[mask_threshold] - y_pred[mask_threshold]) / y_true[mask_threshold]))
 
 def train_test_split(serie, num_lags, tr_vd_ts_percents = [80, 20], print_shapes = False):
     """
