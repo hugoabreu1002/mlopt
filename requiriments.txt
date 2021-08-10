@@ -10,3 +10,4 @@ sparse
 tensorflow
 autokeras
 tpot
+pmdarima

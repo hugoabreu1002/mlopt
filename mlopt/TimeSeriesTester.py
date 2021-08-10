@@ -1,6 +1,6 @@
 import pickle
-from .TimeSeriesUtils import train_test_split_with_Exog, SMAPE
-from .TimeSeriesUtils import train_test_split as train_test_split_noExog
+from TimeSeriesUtils import train_test_split_with_Exog, SMAPE
+from TimeSeriesUtils import train_test_split as train_test_split_noExog
 import tpot
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.metrics import mean_absolute_percentage_error as MAPE
@@ -10,14 +10,14 @@ import autokeras as ak
 import os
 import tensorflow as tf
 import numpy as np
-from .ACOLSTM import ACOLSTM, ACOCLSTM
-from .MMFFBleding_Regressor import AGMMFFBleding
+from ACOLSTM import ACOLSTM, ACOCLSTM
+from MMFFBleding_Regressor import AGMMFFBleding
 import traceback
 import datetime
 from statsmodels.tsa.api import ExponentialSmoothing
 import pandas as pd
 
-#TODO Docsctrings
+#TODO Docsctrings, show final models of automls
 class TimeSeriesTester():
     def __init__(self) -> None:
         pass
@@ -169,19 +169,32 @@ class TimeSeriesTester():
 
         return y_hat
 
-    def applyETS(self, X_train, y_train, X_test, y_test, SavePath):
+    def applyETS(self, y_train, y_test):
         y_pos = np.concatenate([y_train, y_test]) + 0.01
+        all_fits = []
         fit1 = ExponentialSmoothing(y_pos, seasonal_periods=24, trend="add", seasonal="add",use_boxcox=False,initialization_method="estimated").fit()
         fit2 = ExponentialSmoothing(y_pos,seasonal_periods=24,trend="add",seasonal="mul",use_boxcox=False,initialization_method="estimated").fit()
         fit3 = ExponentialSmoothing(y_pos,seasonal_periods=24,trend="add",seasonal="add",damped_trend=True,use_boxcox=False,initialization_method="estimated",).fit()
         fit4 = ExponentialSmoothing(y_pos,seasonal_periods=24,trend="add",seasonal="mul",damped_trend=True,use_boxcox=False,initialization_method="estimated").fit()
+        all_fits = [fit1,fit2, fit3, fit4]
+        
         results = pd.DataFrame(index=[r"$\alpha$", r"$\beta$", r"$\phi$", r"$\gamma$", r"$l_0$", "$b_0$", "SSE (SUM OF SQUARED ERRORS)"])
         params = ["smoothing_level","smoothing_trend","damping_trend","smoothing_seasonal","initial_level","initial_trend"]
         results["Additive"] = [fit1.params[p] for p in params] + [fit1.sse]
         results["Multiplicative"] = [fit2.params[p] for p in params] + [fit2.sse]
         results["Additive Dam"] = [fit3.params[p] for p in params] + [fit3.sse]
         results["Multiplica Dam"] = [fit4.params[p] for p in params] + [fit4.sse]
-        best = results.columns[results["SSE (SUM OF SQUARED ERRORS)"].argmin()]
+        best = results.columns[results["SSE (SUM OF SQUARED ERRORS)"].iloc[:].values.argmin()]
+        print("BEST ETS: " + best)
+
+        best_fit = all_fits[results["SSE (SUM OF SQUARED ERRORS)"].iloc[:].values.argmin()]
+
+        y_hat = best_fit.fiitedvalues.values[-len(y_test):]
+
+        print("ETS - Score:")
+        print("MAE: %.4f" % mean_absolute_error(y_test, y_hat))
+
+        return y_hat
 
 
     def saveResults(self, y_test, y_hats, labels, save_path, timestap_now):
@@ -207,7 +220,7 @@ class TimeSeriesTester():
         """
             autoMlsToExecute="All"
 
-            or insert the automls in a list like autoMlsToExecute=["tpot", "hpsklearn", "autokeras", "agmmff", "acolstm", "acoclstm"]
+            or insert the automls in a list like autoMlsToExecute=["tpot", "hpsklearn", "autokeras", "agmmff", "acolstm", "acoclstm", "ets"]
         """
         X_train, y_train, X_test, y_test  = train_test_split_with_Exog(y_data, exog_data, lags, train_test)
 
@@ -336,6 +349,20 @@ class TimeSeriesTester():
                 traceback.print_exc()
                 pass
 
-        
+        if "ets" in autoMlsToExecute or autoMlsToExecute=="All":
+            try:
+                print("ETS Evaluation...")
+                if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_ETS"):
+                    y_hat_ETS = self.applyETS(y_train_noexog, y_test_noexog)
+                    np.savetxt(save_path+"/y_hat_ETS", y_hat_acoclstm, delimiter=';')
+                else:
+                    y_hat_acoclstm = np.loadtxt(save_path+"/y_hat_ETS", delimiter=';')
+
+                print("SHAPE HAT {0}".format(y_hat_ETS.shape))
+                y_hats.append(y_hat_ETS)
+                labels.append("ETS")
+            except Exception:
+                traceback.print_exc()
+                pass
 
         self.saveResults(y_test, y_hats, labels, save_path, timestamp_now)
