@@ -1,6 +1,4 @@
 from numpy import hstack
-from sklearn.datasets import make_regression
-from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor as RFR
 from sklearn.ensemble import GradientBoostingRegressor as GBR

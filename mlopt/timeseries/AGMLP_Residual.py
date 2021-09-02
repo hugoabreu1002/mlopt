@@ -1,5 +1,5 @@
 from sklearn.metrics import mean_absolute_error as mae
-from .AgMlp import AgMlp as Ag_mlp
+from ..omodels.AgMlp import AgMlp as Ag_mlp
 import numpy as np
 import random
 from tqdm import tqdm

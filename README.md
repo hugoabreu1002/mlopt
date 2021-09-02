@@ -1,5 +1,5 @@
 # MachineLearning-OPTimized-Algorithms
-
+//TODO update readme and examples and package calls
 Here I will keep the Algorithms that I wrote, or cool examples with packages that I found on web.
 
 ## Descriptions

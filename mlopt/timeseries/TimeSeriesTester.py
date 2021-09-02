@@ -10,8 +10,8 @@ import autokeras as ak
 import os
 import tensorflow as tf
 import numpy as np
-from ACOLSTM import ACOLSTM, ACOCLSTM
-from MMFFBleding_Regressor import AGMMFFBleding
+from ..omodels.ACOLSTM import ACOLSTM, ACOCLSTM
+from ..omodels.MMFFBleding_Regressor import AGMMFFBleding
 import traceback
 import datetime
 from statsmodels.tsa.api import ExponentialSmoothing

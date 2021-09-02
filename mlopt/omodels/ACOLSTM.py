@@ -2,7 +2,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, LayerNormalization, Conv1D, BatchNormalization, Dropout, Flatten
 from tensorflow.keras import backend as K
 from tensorflow.keras.callbacks import EarlyStopping
-from .ACO import ACO
+from ..optimizers.ACO import ACO
 from sklearn.metrics import mean_absolute_error as MAE
 import warnings
 import numpy as np

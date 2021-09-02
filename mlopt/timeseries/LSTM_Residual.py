@@ -1,6 +1,6 @@
 from sklearn.metrics import mean_absolute_error as mae
 import numpy as np
-from .ACOLSTM import ACOLSTM
+from ..omodels.ACOLSTM import ACOLSTM
 
 class LSTM_Residual:
     """ A Residual correction aproach for time series"""
