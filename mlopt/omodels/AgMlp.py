@@ -1,10 +1,8 @@
 from sklearn.metrics import mean_absolute_error as mae
 from sklearn.neural_network import MLPRegressor
-from sklearn import preprocessing
 import numpy as np
 import random
 from tqdm import tqdm
-from sklearn.ensemble import VotingRegressor
 
 class AgMlp:
     """
@@ -49,8 +47,11 @@ class AgMlp:
                                     activation = population[i][4], solver = population[i][0],
                                     learning_rate = population[i][5], max_iter = 500, early_stopping=True)
             #qt_fits=0
-            mlp_volatil.fit(self._X_train, self._y_train)
-            mae_fits= mae(self._y_test, mlp_volatil.predict(self._X_test))
+            try:
+                mlp_volatil.fit(self._X_train, self._y_train)
+                mae_fits = mae(self._y_test, mlp_volatil.predict(self._X_test))
+            except:
+                mae_fits = np.inf
 
             population[i][-1] = mae_fits
             population[i][-2] = mlp_volatil

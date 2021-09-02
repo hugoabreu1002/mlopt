@@ -1,13 +1,10 @@
 from sklearn.metrics import mean_absolute_error as mae
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import VotingRegressor
-from sklearn.datasets import make_regression
-from sklearn import preprocessing
 from .AgMlp import AgMlp as Ag_mlp
 from .AGMLP_Residual import AGMLP_Residual
 import numpy as np
 import random
-from tqdm import tqdm
+import warnings
+warnings.filterwarnings("ignore")
 
 class AGMLP_VR_Residual(AGMLP_Residual):
     def gen_population(self):
