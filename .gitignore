@@ -1,6 +1,0 @@
-**/__pycache__/
-examples/.ipynb_checkpoints/*
-*.log
-desktop.ini
-**/*.pyc
-mlopt/__pycache__/TimeSeriesUtils.cpython-37.pyc
