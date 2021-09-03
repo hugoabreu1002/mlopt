@@ -31,7 +31,6 @@ class ACOLSTM:
         self._y_test = y_test
         self._verbose = verbose
         self._options_ACO = options_ACO
-        self._y_hat = None
         self._best_result = None
         self._best_result_fitness = None
         self._n_variables = n_variables
@@ -188,7 +187,7 @@ class ACOCLSTM(ACOLSTM):
             
         return model
     
-    def fitModel(self, X):
+    def fitModel(self, X, early_stop=True):
         search_parameters={'conv_fl_filters_qtn':X[0], 'conv_fl_kernel_sz':X[1],
                            'conv_sl_filters_qtn':X[2], 'conv_sl_kernel_sz':X[3],
                            'fl_qtn':X[4],'fl_func':self._activations[X[5]], 'fl_refunc':self._activations[X[6]],
