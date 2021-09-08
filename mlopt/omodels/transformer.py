@@ -71,7 +71,6 @@ class ModelTrunk(keras.Model):
             ff_dim = head_size
         self.dropout = dropout
         self.attention_layers = [AttentionBlock(num_heads=num_heads, head_size=head_size, ff_dim=ff_dim, dropout=dropout) for _ in range(num_layers)]
-
         
     def call(self, inputs):
         time_embedding = keras.layers.TimeDistributed(self.time2vec)(inputs)
@@ -113,19 +112,13 @@ class Transformer():
 
         return min_lr
 
-    def getModel(self, time2vec_dim=1, num_heads=2, head_size=128, ff_dim=None, num_layers=1, dropout=0):
-        model = None
+    def fitModel(self, time2vec_dim=1, num_heads=2, head_size=128, ff_dim=None, num_layers=1, dropout=0, epochs=300, early_stop=True, verbose=True, lr_warmnup=True):
+
+        Model = None
         K.clear_session()
         
-        model = ModelTrunk()
-        
-        model.compile(optimizer='adam', loss='mae', metrics=['mse'])
-            
-        return model
-
-    def fitModel(self, time2vec_dim=1, num_heads=2, head_size=128, ff_dim=None, num_layers=1, dropout=0, epochs=300, early_stop=True, verbose=True):
-        
-        Model = self.getModel(time2vec_dim, num_heads, head_size, ff_dim, num_layers, dropout)
+        Model = ModelTrunk(time2vec_dim=time2vec_dim, num_heads=num_heads, head_size=head_size, ff_dim=ff_dim, num_layers=num_layers, dropout=dropout)
+        Model.compile(optimizer='adam', loss='mae', metrics=['mse'])
 
         for i in range(self._X_train.shape[1]):
             X_train_col = self._X_train[i]
@@ -141,7 +134,9 @@ class Transformer():
         else:
             es = EarlyStopping(monitor='loss', mode='auto', patience=100, verbose=1)
 
-        my_callbacks = [keras.callbacks.LearningRateScheduler(partial(self.lr_scheduler), verbose=0), es]
+        my_callbacks = [es]
+        if lr_warmnup:
+            my_callbacks += [keras.callbacks.LearningRateScheduler(partial(self.lr_scheduler), verbose=0)]
 
         Model.fit(self._X_train, self._y_train, epochs=epochs, shuffle=False, use_multiprocessing=True, callbacks=my_callbacks, verbose=verbose)
 
