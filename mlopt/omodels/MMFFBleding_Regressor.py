@@ -83,8 +83,8 @@ class MMFFBleding:
 
 class AGMMFFBleding(MMFFBleding):
 
-    def __init__(self, X_train, y_train, X_test, y_test, blender = DecisionTreeRegressor(), epochs=5, size_pop=40):
-        self._ensembleSearch = EnsembleSearch(X_train, y_train, X_test, y_test, epochs=epochs, size_pop=size_pop, verbose=False)
+    def __init__(self, X_train, y_train, X_test, y_test, blender = DecisionTreeRegressor(), epochs=5, size_pop=40, verbose=True):
+        self._ensembleSearch = EnsembleSearch(X_train, y_train, X_test, y_test, epochs=epochs, size_pop=size_pop, verbose=verbose)
         super().__init__(X_train, y_train, X_test, y_test, models=None, blender=blender)
 
     def train(self):

@@ -22,7 +22,8 @@ import pandas as pd
 
 #TODO Docsctrings, show final models of automls
 class TimeSeriesTester():
-    def __init__(self) -> None:
+    def __init__(self, verbose=False) -> None:
+        self._verbose = verbose
         pass
 
     def applyTPOT(self, X_train, y_train, X_test, y_test, SavePath, popSize=20,
@@ -34,7 +35,8 @@ class TimeSeriesTester():
                                                     cv=kFolders, #number of folds in StratifiedKFold
                                                     max_eval_time_mins=TPOTSingleMinutes, #time in minutes for each trial
                                                     max_time_mins=TPOTFullMinutes, #time in minutes for whole optimization
-                                                    scoring="neg_mean_absolute_error") 
+                                                    scoring="neg_mean_absolute_error",
+                                                    verbosity=1) 
             
             pipeline_optimizer.fit(X_train, y_train) #fit the pipeline optimizer - can take a long time
             pipeline_optimizer.export(SavePath)
@@ -108,7 +110,7 @@ class TimeSeriesTester():
                     useSavedModels = True):
 
         if not useSavedModels or not os.path.isdir(SavePath):
-            lstmOptimizer = ACOLSTM(X_train, y_train, X_test, y_test, n_variables=1 ,options_ACO=options_ACO, verbose=True)
+            lstmOptimizer = ACOLSTM(X_train, y_train, X_test, y_test, n_variables=1 ,options_ACO=options_ACO, verbose=self._verbose)
             final_model, y_hat = lstmOptimizer.optimize(Layers_Qtd = Layers_Qtd, epochs=epochs)
             final_model.save(SavePath)
             del lstmOptimizer
@@ -134,7 +136,7 @@ class TimeSeriesTester():
                     useSavedModels = True):
 
         if not useSavedModels or not os.path.isdir(SavePath):
-            clstmOptimizer = ACOCLSTM(X_train, y_train, X_test, y_test, 1 ,options_ACO=options_ACO, verbose=True)
+            clstmOptimizer = ACOCLSTM(X_train, y_train, X_test, y_test, 1 ,options_ACO=options_ACO, verbose=self._verbose)
             final_model, y_hat = clstmOptimizer.optimize(Layers_Qtd = Layers_Qtd, ConvKernels = ConvKernels, epochs=epochs)
             final_model.save(SavePath)
             del clstmOptimizer
@@ -154,7 +156,7 @@ class TimeSeriesTester():
     def applyGAMMFF(self, X_train, y_train, X_test, y_test, SavePath,
                     epochs=5, size_pop=40, useSavedModels = True):
 
-        agMMGGBlending = AGMMFFBleding(X_train, y_train, X_test, y_test, epochs=epochs, size_pop=size_pop)
+        agMMGGBlending = AGMMFFBleding(X_train, y_train, X_test, y_test, epochs=epochs, size_pop=size_pop, verbose=self._verbose)
         if not useSavedModels or not (os.path.isfile(SavePath+"_blender.pckl") and os.path.isfile(SavePath+"_models.pckl")):
             final_models, final_blender = agMMGGBlending.train()
             y_hat = agMMGGBlending.predict(X_test=X_test, blender=final_blender, models=final_models)
@@ -212,12 +214,10 @@ class TimeSeriesTester():
         options_PSO = {'n_particles':5,'n_iterations':3,'c1': 0.5, 'c2': 0.3, 'w': 0.9, 'k': 3, 'p': 2}
         options_ACO = {'antNumber':3, 'antTours':3, 'alpha':2, 'beta':2, 'rho':0.5, 'Q':2}
         y_sarimax_PSO_ACO = sarimax_PSO_ACO_search(endo_var=endo_var, exog_var_matrix=exog_var_matrix, searchSpace=copy(searchSpace), 
-                                        options_PSO=options_PSO, options_ACO=options_ACO, verbose=False)
+                                        options_PSO=options_PSO, options_ACO=options_ACO, verbose=self._verbose)
 
         mape_pso_aco = MAPE(y_sarimax_PSO_ACO, endo_var)
         print("Mape: {0}".format(mape_pso_aco))
-
-       
 
         if not useSavedModels or not os.path.isfile(SavePath+"_mlp_vr_residual.pckl"):
             ag_mlp_vr_residual = AGMLP_VR_Residual(endo_var, y_sarimax_PSO_ACO, num_epochs = 3, size_pop = 10, prob_mut=0.2, tr_ts_percents=tr_ts_percents).search_best_model()
