@@ -23,6 +23,9 @@ def SMAPE(A, F, threshold=0):
         (y_true, y_pred)
         returns in percentage
     """
+    if A.shape != F.shape:
+        A = A.reshape(F.shape)
+        
     mask_threshold = np.abs(A) >= threshold
     tmp = 2 * np.abs(F[mask_threshold] - A[mask_threshold]) / (np.abs(A[mask_threshold]) + np.abs(F[mask_threshold]))
     len_ = np.count_nonzero(~np.isnan(tmp))
@@ -489,7 +492,7 @@ def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options
 
     return results.aicc, best_result
 
-def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, options_ACO, exogColumns=None, verbose=False):
+def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, options_ACO, exogColumnsNames=None, verbose=False):
     """ 
         PCO - ACO Sariamx Search.
         It divides the tasks in two. PDQ Search is done by ACO. PDQS Search and Exogenous Variables searches is
@@ -581,8 +584,8 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
     listPosb = convertInt2PosList(global_best_result[3])
     
     logging.info("Global best result: pdq={0}, pdqs={1}, X={2}".format(param, param_seasonal, listPosb))
-    if exogColumns is not None:
-        logging.info("Chosen exog columns: {0}".format(exogColumns[listPosb]))
+    if exogColumnsNames is not None:
+        logging.info("Chosen exog columns: {0}".format(exogColumnsNames[listPosb]))
     
     if len(listPosb) > 0:
         true_exog = exog_var_matrix[:, listPosb]

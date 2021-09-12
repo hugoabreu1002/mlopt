@@ -11,11 +11,17 @@ class AGMLP_Residual:
     def __init__(self, data, y_sarimax, num_epochs = 10, size_pop=10, prob_mut=0.8, tr_ts_percents=[80,20], alpha_stop=1e-4):
         """
             data - original data
+            
             y_sarimax - forecasted data
+            
             num_epochs - number of epochs
+            
             size_pop - size of population
+            
             prob_mut - probability of mutation
+            
             tr_ts_percents - list of train and test percentages. E.G: [80,20]
+            
             alpha_stop - early stop criteria.
         """
         self._data = data

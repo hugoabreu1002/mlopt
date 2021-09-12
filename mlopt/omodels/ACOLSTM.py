@@ -95,7 +95,7 @@ class ACOLSTM:
         
         return setedModel
 
-    def _fitnessFunction(self, X):
+    def _fitnessFunction(self, X, *args):
         fitedmodel = self.fitModel(X)
         if self._verbose:
             print(fitedmodel.summary())

@@ -44,7 +44,7 @@ class ACO(object):
         self._antNumber = None
         self._antTours = None
         self._dimentionsRanges = None
-        self.fitnessFunction = None
+        self._fitnessFunction = None
         self._fitnessFunctionArgs = None
     
     def setSpace(self):
@@ -101,7 +101,7 @@ class ACO(object):
                     print("Setting fitness for")
                     print(self._Space[i_index, :])
 
-                Ci = self.fitnessFunction(self._Space[i_index, :], self._fitnessFunctionArgs)
+                Ci = self._fitnessFunction(self._Space[i_index, :], self._fitnessFunctionArgs)
                 self._verticesFitness[i_index] = Ci
 
                 if verbose:
@@ -112,7 +112,7 @@ class ACO(object):
                     print("Setting fitness for")
                     print(self._Space[j_index, :])
                 
-                Cj = self.fitnessFunction(self._Space[j_index, :], self._fitnessFunctionArgs)
+                Cj = self._fitnessFunction(self._Space[j_index, :], self._fitnessFunctionArgs)
                 self._verticesFitness[j_index] = Cj
 
                 if verbose:
@@ -197,7 +197,7 @@ class ACO(object):
         self._antNumber = antNumber
         self._antTours = antTours
         self._dimentionsRanges = dimentionsRanges
-        self.fitnessFunction = function
+        self._fitnessFunction = function
         self._fitnessFunctionArgs = functionArgs
         self.initializeMatricesAndAntsPosition()
 
