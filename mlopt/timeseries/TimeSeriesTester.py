@@ -202,7 +202,7 @@ class TimeSeriesTester():
 
         return y_hat
 
-    def _applySARIMAXAGMLPEnsemble(self, endo_var, exog_var_matrix, SavePath, tr_ts_percents=[80,20], popsize=10, numGenerations=3, useSavedModels = True):
+    def _applySARIMAXAGMLPEnsemble(self, endo_var, exog_var_matrix, SavePath, tr_ts_percents=[80,20], popsize=10, numberGenerations=3, useSavedModels = True):
         # TODO: make mlopt.timeseries.TimeSeriesUtils functions that concats with pmdarima output to PSO-ACO search increase the searching createria with Exogenous variables
         p = [0, 1, 2]
         d = [0, 1]
@@ -215,7 +215,7 @@ class TimeSeriesTester():
         searchSpace = [p, d, q, sp, sd, sq, s]
 
         options_PSO = {'n_particles':5,'n_iterations':3,'c1': 0.5, 'c2': 0.3, 'w': 0.9, 'k': 3, 'p': 2}
-        options_ACO = {'antNumber':popsize, 'antTours':numGenerations, 'alpha':2, 'beta':2, 'rho':0.5, 'Q':2}
+        options_ACO = {'antNumber':popsize, 'antTours':numberGenerations, 'alpha':2, 'beta':2, 'rho':0.5, 'Q':2}
         y_sarimax_PSO_ACO = sarimax_PSO_ACO_search(endo_var=endo_var, exog_var_matrix=exog_var_matrix,
                                                    searchSpace=copy(searchSpace), 
                                                    options_PSO=options_PSO,
@@ -227,11 +227,11 @@ class TimeSeriesTester():
 
         if not useSavedModels or not os.path.isfile(SavePath+"_mlp_vr_residual.pckl"):
             ag_mlp_vr_residual = AGMLP_VR_Residual(endo_var, y_sarimax_PSO_ACO,
-                                                   num_epochs = numGenerations,
+                                                   num_epochs = numberGenerations,
                                                    size_pop = popsize, prob_mut=0.2,
                                                    tr_ts_percents=tr_ts_percents).search_best_model()
             best_mlp_vr_residual = ag_mlp_vr_residual._best_of_all
-            pickle.dump(best_mlp_vr_residual, open(SavePath+"_mlp_vr_residual.pckl", 'wb'))
+            pickle.dump(best_mlp_vr_residual, open(SavePath+"mlp_vr_residual.pckl", 'wb'))
         else:
             best_mlp_vr_residual = pickle.load(open(SavePath+"mlp_vr_residual.pckl", 'rb'))
 
@@ -266,13 +266,17 @@ class TimeSeriesTester():
 
         return None
 
-    def plotResults(save_path="./TimeSeriesTester/", title="Time Series Tester Results", transformation=115000, ticksX=None, ticksScapeFrequency=3):
+    def plotResults(self, save_path="./TimeSeriesTester/", title="Time Series Tester Results", transformation=115000, ticksX=None, ticksScapeFrequency=3):
         _, ax = plt.subplots(1,1, figsize=(14,7), dpi=300)
         y_test = np.loadtxt(save_path+"y_test")
         y_hats_files= [x for x in os.listdir(save_path) if "y" in x and "test" not in x]
         y_hats = [np.loadtxt(save_path+x) for x in y_hats_files]
         labels = list(map(lambda x: x.split('_')[-1], y_hats_files))
-        ax.plot(ticksX, y_test*transformation, 'k-o', label='Original', linewidth=2.0)
+
+        if not isinstance(ticksX,(list,pd.core.series.Series,np.ndarray)):
+            ticksX = np.arange(y_test.shape[0])
+        
+        ax.plot(ticksX, y_test*transformation, 'k-o', label='Testa Data', linewidth=2.0)
 
         for y_hat, plotlabel in zip(y_hats, labels):
             print("ploting... " + plotlabel)
@@ -286,7 +290,8 @@ class TimeSeriesTester():
         ax.set_title(title, fontsize=14)
         plt.show()
         plt.tight_layout()
-        plt.savefig(save_path+"/results.png", dpi=300)
+        plt.savefig(save_path+"results.png", dpi=300)
+
         return ax
 
     def executeTests(self, y_data, exog_data=None, autoMlsToExecute="All", train_test_split=[80,20],
@@ -407,8 +412,9 @@ class TimeSeriesTester():
                 print("SARIMAXAGMLPEnsemble Evaluation...")
                 if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_sarimxagmlpensemble"):
                     y_hat_sarimxagmlpensemble = self._applySARIMAXAGMLPEnsemble(y_data, exog_data, SavePath=save_path,
-                                                                               tr_ts_percents=train_test_split,
-                                                                               popsize=popsize, numberGenerations=numberGenerations)
+                                                                                tr_ts_percents=train_test_split,
+                                                                                popsize=popsize,
+                                                                                numberGenerations=numberGenerations)
                     np.savetxt(save_path+"/y_hat_sarimxagmlpensemble", y_hat_sarimxagmlpensemble, delimiter=';')
                 else:
                     y_hat_sarimxagmlpensemble = np.loadtxt(save_path+"/y_hat_sarimxagmlpensemble", delimiter=';')
