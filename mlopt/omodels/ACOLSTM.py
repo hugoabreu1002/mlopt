@@ -7,6 +7,7 @@ from sklearn.metrics import mean_absolute_error as MAE
 import warnings
 import numpy as np
 import warnings
+import os
 
 class ACOLSTM:
     """
@@ -122,7 +123,7 @@ class ACOLSTM:
             optimizer = ['SGD', 'adam', 'rmsprop','Adagrad']\n
             epochs = [100,200,400]\n
         """
-
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
         self._activations = activations
         self._optimizers = optimizers
         self._epochs = epochs
@@ -235,7 +236,7 @@ class ACOCLSTM(ACOLSTM):
             optimizer = ['SGD', 'adam', 'rmsprop','Adagrad']\n
             epochs = [100,200,400]\n
         """
-
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
         self._activations = activations
         self._optimizers = optimizers
         self._epochs = epochs
