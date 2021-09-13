@@ -11,3 +11,4 @@ tensorflow
 autokeras
 tpot
 pmdarima
+hpsklearn
