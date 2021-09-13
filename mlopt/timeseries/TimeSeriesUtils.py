@@ -38,6 +38,8 @@ def MAPE(y_true, y_pred, threshold=0):
         (y_true, y_pred)
         returns in percentage
     """
+    if y_true.shape != y_pred.shape:
+        y_true = y_true.reshape(y_pred.shape)
     y_true, y_pred = np.array(y_true), np.array(y_pred)
     mask_threshold = np.abs(y_true) >= threshold
     return 100*np.mean(np.abs((y_true[mask_threshold] - y_pred[mask_threshold]) / y_true[mask_threshold]))
