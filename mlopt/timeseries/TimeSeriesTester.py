@@ -1,12 +1,11 @@
 from copy import copy
 from mlopt.mlopt.timeseries.AGMLP_VR_Residual import AGMLP_VR_Residual
 import pickle
-from .TimeSeriesUtils import sarimax_PSO_ACO_search, train_test_split_with_Exog, SMAPE
+from .TimeSeriesUtils import sarimax_PSO_ACO_search, train_test_split_with_Exog, SMAPE, MAPE
 from .TimeSeriesUtils import train_test_split as train_test_split_noExog
 from .TimeSeriesUtils import train_test_split_prev
 import tpot
 from sklearn.metrics import mean_absolute_error, mean_squared_error
-from sklearn.metrics import mean_absolute_percentage_error as MAPE
 from hpsklearn import HyperoptEstimator, any_regressor, any_preprocessing
 from hyperopt import tpe
 import autokeras as ak
@@ -182,18 +181,19 @@ class TimeSeriesTester():
         fit4 = ExponentialSmoothing(y_pos,seasonal_periods=24,trend="add",seasonal="mul",damped_trend=True,use_boxcox=False,initialization_method="estimated").fit()
         all_fits = [fit1,fit2, fit3, fit4]
         
-        results = pd.DataFrame(index=[r"$\alpha$", r"$\beta$", r"$\phi$", r"$\gamma$", r"$l_0$", "$b_0$", "SSE (SUM OF SQUARED ERRORS)"])
+        results = pd.DataFrame(index=[r"$\alpha$", r"$\beta$", r"$\phi$", r"$\gamma$", r"$l_0$", "$b_0$", "SSE"])
         params = ["smoothing_level","smoothing_trend","damping_trend","smoothing_seasonal","initial_level","initial_trend"]
         results["Additive"] = [fit1.params[p] for p in params] + [fit1.sse]
         results["Multiplicative"] = [fit2.params[p] for p in params] + [fit2.sse]
         results["Additive Dam"] = [fit3.params[p] for p in params] + [fit3.sse]
         results["Multiplica Dam"] = [fit4.params[p] for p in params] + [fit4.sse]
-        best = results.columns[results["SSE (SUM OF SQUARED ERRORS)"].iloc[:].values.argmin()]
-        print("BEST ETS: " + best)
+        print(results)
+        best = results.loc["SSE"][results.loc["SSE"].iloc[:].values.argmin()]
+        print("BEST ETS: " + str(best))
 
-        best_fit = all_fits[results["SSE (SUM OF SQUARED ERRORS)"].iloc[:].values.argmin()]
+        best_fit = all_fits[results.loc["SSE"].iloc[:].values.argmin()]
 
-        y_hat = best_fit.fiitedvalues.values[-len(y_test):]
+        y_hat = best_fit.fittedvalues[-len(y_test):]
 
         print("ETS - Score:")
         print("MAE: %.4f" % mean_absolute_error(y_test, y_hat))
@@ -238,7 +238,7 @@ class TimeSeriesTester():
         return y_estimado_so_test
 
 
-    def saveResults(self, y_test, y_hats, labels, save_path, timestap_now):
+    def saveResults(self, y_test, y_hats, labels, save_path, timestap_now, metricsThreshHold):
         logResults = ""
         logResults += "Scores" + "\n"
         print("Scores")
@@ -246,8 +246,8 @@ class TimeSeriesTester():
         for y_hat, plotlabel in zip(y_hats, labels):
             print("ploting... " + plotlabel)
             logResults += "{0} ".format(plotlabel) + "- MAE: %.4f" % mean_absolute_error(y_test, y_hat) + "\n"
-            logResults += "{0} ".format(plotlabel) + "- MAPE: %.4f" % MAPE(y_test, y_hat) + "\n"
-            logResults += "{0} ".format(plotlabel) + "- SMAPE: %.4f" % SMAPE(y_test, y_hat) + "\n"
+            logResults += "{0} ".format(plotlabel) + "- MAPE: %.4f" % MAPE(y_test, y_hat, metricsThreshHold) + "\n"
+            logResults += "{0} ".format(plotlabel) + "- SMAPE: %.4f" % SMAPE(y_test, y_hat, metricsThreshHold) + "\n"
             logResults += "{0} ".format(plotlabel) + "- MSE: %.4f" % mean_squared_error(y_test, y_hat) + "\n"
 
         with open(save_path+"/results_{0}.txt".format(timestap_now), "w") as text_file:
@@ -256,7 +256,7 @@ class TimeSeriesTester():
         print(logResults)
 
     def executeTests(self, y_data, exog_data=None, autoMlsToExecute="All", train_test_split=[80,20],
-                     lags=24, useSavedModels=True, useSavedArrays=True, popsize=10, numberGenerations=5,
+                     lags=24, useSavedModels=True, useSavedArrays=True, popsize=10, numberGenerations=5, metricsThreshHold=0.1,
                      save_path="./TimeSeriesTester/"):
 
         # TODO modificar parametros de cada um dos automls
@@ -269,6 +269,15 @@ class TimeSeriesTester():
 
             numberGenerations: is utilize in the evolutiary based algorithms
         """
+        if np.isnan(np.sum(y_data)):
+            raise("Gen still has nan")
+
+        for i in range(exog_data.shape[1]):
+            ex_var = exog_data[:,i]
+            if np.isnan(np.sum(ex_var)):
+                print("exog still has nan in column {0}".format(i))
+                raise ValueError("Exog has nan in column")
+        
         if isinstance(exog_data,(list,pd.core.series.Series,np.ndarray)):
             X_train, y_train, X_test, y_test  = train_test_split_with_Exog(y_data, exog_data, lags, train_test_split)
         else:
@@ -422,7 +431,7 @@ class TimeSeriesTester():
                 print("ETS Evaluation...")
                 if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_ETS"):
                     y_hat_ETS = self.applyETS(y_train_noexog, y_test_noexog)
-                    np.savetxt(save_path+"/y_hat_ETS", y_hat_acoclstm, delimiter=';')
+                    np.savetxt(save_path+"/y_hat_ETS", y_hat_ETS, delimiter=';')
                 else:
                     y_hat_ETS = np.loadtxt(save_path+"/y_hat_ETS", delimiter=';')
 
@@ -433,4 +442,4 @@ class TimeSeriesTester():
                 traceback.print_exc()
                 pass
 
-        self.saveResults(y_test, y_hats, labels, save_path, timestamp_now)
+        self.saveResults(y_test, y_hats, labels, save_path, timestamp_now, metricsThreshHold)
