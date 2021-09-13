@@ -200,7 +200,8 @@ class TimeSeriesTester():
 
         return y_hat
 
-    def applySARIMAXAGMLPEnsemble(self, endo_var, exog_var_matrix, SavePath, tr_ts_percents=[80,20], useSavedModels = True):
+    def applySARIMAXAGMLPEnsemble(self, endo_var, exog_var_matrix, SavePath, tr_ts_percents=[80,20], popsize=10, numGenerations=3, useSavedModels = True):
+        # TODO: make mlopt.timeseries.TimeSeriesUtils functions that concats with pmdarima output to PSO-ACO search increase the searching createria with Exogenous variables
         p = [0, 1, 2]
         d = [0, 1]
         q = [0, 1, 2, 3]
@@ -212,15 +213,21 @@ class TimeSeriesTester():
         searchSpace = [p, d, q, sp, sd, sq, s]
 
         options_PSO = {'n_particles':5,'n_iterations':3,'c1': 0.5, 'c2': 0.3, 'w': 0.9, 'k': 3, 'p': 2}
-        options_ACO = {'antNumber':3, 'antTours':3, 'alpha':2, 'beta':2, 'rho':0.5, 'Q':2}
-        y_sarimax_PSO_ACO = sarimax_PSO_ACO_search(endo_var=endo_var, exog_var_matrix=exog_var_matrix, searchSpace=copy(searchSpace), 
-                                        options_PSO=options_PSO, options_ACO=options_ACO, verbose=self._verbose)
+        options_ACO = {'antNumber':popsize, 'antTours':numGenerations, 'alpha':2, 'beta':2, 'rho':0.5, 'Q':2}
+        y_sarimax_PSO_ACO = sarimax_PSO_ACO_search(endo_var=endo_var, exog_var_matrix=exog_var_matrix,
+                                                   searchSpace=copy(searchSpace), 
+                                                   options_PSO=options_PSO,
+                                                   options_ACO=options_ACO,
+                                                   verbose=self._verbose)
 
         mape_pso_aco = MAPE(y_sarimax_PSO_ACO, endo_var)
         print("Mape: {0}".format(mape_pso_aco))
 
         if not useSavedModels or not os.path.isfile(SavePath+"_mlp_vr_residual.pckl"):
-            ag_mlp_vr_residual = AGMLP_VR_Residual(endo_var, y_sarimax_PSO_ACO, num_epochs = 3, size_pop = 10, prob_mut=0.2, tr_ts_percents=tr_ts_percents).search_best_model()
+            ag_mlp_vr_residual = AGMLP_VR_Residual(endo_var, y_sarimax_PSO_ACO,
+                                                   num_epochs = numGenerations,
+                                                   size_pop = popsize, prob_mut=0.2,
+                                                   tr_ts_percents=tr_ts_percents).search_best_model()
             best_mlp_vr_residual = ag_mlp_vr_residual._best_of_all
             pickle.dump(best_mlp_vr_residual, open(SavePath+"_mlp_vr_residual.pckl", 'wb'))
         else:
@@ -256,7 +263,8 @@ class TimeSeriesTester():
         print(logResults)
 
     def executeTests(self, y_data, exog_data=None, autoMlsToExecute="All", train_test_split=[80,20],
-                     lags=24, useSavedModels=True, useSavedArrays=True, popsize=10, numberGenerations=5, metricsThreshHold=0.1,
+                     lags=24, useSavedModels=True, useSavedArrays=True, popsize=10, numberGenerations=5,
+                     metricsThreshHold=0.1,
                      save_path="./TimeSeriesTester/"):
 
         # TODO modificar parametros de cada um dos automls
@@ -366,7 +374,9 @@ class TimeSeriesTester():
             try:
                 print("SARIMAXAGMLPEnsemble Evaluation...")
                 if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_sarimxagmlpensemble"):
-                    y_hat_sarimxagmlpensemble = self.applySARIMAXAGMLPEnsemble(y_data, exog_data, SavePath=save_path)
+                    y_hat_sarimxagmlpensemble = self.applySARIMAXAGMLPEnsemble(y_data, exog_data, SavePath=save_path,
+                                                                               tr_ts_percents=train_test_split,
+                                                                               popsize=10, numberGenerations=5)
                     np.savetxt(save_path+"/y_hat_sarimxagmlpensemble", y_hat_sarimxagmlpensemble, delimiter=';')
                 else:
                     y_hat_sarimxagmlpensemble = np.loadtxt(save_path+"/y_hat_sarimxagmlpensemble", delimiter=';')
