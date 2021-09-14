@@ -92,7 +92,7 @@ class ACO(object):
             # exploitation ants goes randomly near the last position
             random_index_move = int(np.random.randint(-self._Space.shape[0], self._Space.shape[0])/10)
             j_index = i_index + random_index_move
-            if j_index < 0 or j_index > self._Space.shape[0]:
+            if j_index < 0 or j_index >= self._Space.shape[0]:
                 j_index = np.random.choice(range(0,self._Space.shape[0]))
             
             if i_index != j_index: # ant should not stay at the point

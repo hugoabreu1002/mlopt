@@ -210,7 +210,7 @@ class TimeSeriesTester():
         sp = [0, 1, 2]
         sd = [0, 1]
         sq = [0, 1, 2, 3]
-        s = [24, 48] #como são dados horarios...
+        s = [24] #como são dados horarios...
         # search Space, exog possibilities comes in the functions.
         searchSpace = [p, d, q, sp, sd, sq, s]
 

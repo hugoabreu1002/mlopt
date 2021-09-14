@@ -482,7 +482,7 @@ def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options
     warnings.filterwarnings("ignore") # specify to ignore warning messages
     ACOsearch = ACO(alpha, beta, rho, Q)
     best_result, _ = ACOsearch.optimize(antNumber, antTours, dimentionsRanges=searchSpace, function=SARIMAX_AICc,
-                                        functionArgs=[endo_var, exog_var_matrix, PDQS],  verbose=verbose)
+                                        functionArgs=[endo_var, exog_var_matrix, PDQS], verbose=verbose)
     
     logging.info("BEST result: {0}.".format(best_result))
     param = best_result
