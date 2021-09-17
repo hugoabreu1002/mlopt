@@ -202,7 +202,53 @@ class TimeSeriesTester():
 
         return y_hat
 
-    def _applySARIMAXAGMLPEnsemble(self, endo_var, exog_var_matrix, SavePath, tr_ts_percents=[80,20], popsize=10, numberGenerations=3, useSavedModels = True):
+    def _applyETSMLPEnsemble(self, endo_var, SavePath, tr_ts_percents=[80,20], popsize=10, numberGenerations=3, useSavedModels = True):
+        y_pos = endo_var + 0.001
+        all_fits = []
+        fit1 = ExponentialSmoothing(y_pos, seasonal_periods=24, trend="add", seasonal="add",use_boxcox=False,initialization_method="estimated").fit()
+        fit2 = ExponentialSmoothing(y_pos,seasonal_periods=24,trend="add",seasonal="mul",use_boxcox=False,initialization_method="estimated").fit()
+        fit3 = ExponentialSmoothing(y_pos,seasonal_periods=24,trend="add",seasonal="add",damped_trend=True,use_boxcox=False,initialization_method="estimated",).fit()
+        fit4 = ExponentialSmoothing(y_pos,seasonal_periods=24,trend="add",seasonal="mul",damped_trend=True,use_boxcox=False,initialization_method="estimated").fit()
+        all_fits = [fit1,fit2, fit3, fit4]
+        
+        results = pd.DataFrame(index=[r"$\alpha$", r"$\beta$", r"$\phi$", r"$\gamma$", r"$l_0$", "$b_0$", "SSE"])
+        params = ["smoothing_level","smoothing_trend","damping_trend","smoothing_seasonal","initial_level","initial_trend"]
+        results["Additive"] = [fit1.params[p] for p in params] + [fit1.sse]
+        results["Multiplicative"] = [fit2.params[p] for p in params] + [fit2.sse]
+        results["Additive Dam"] = [fit3.params[p] for p in params] + [fit3.sse]
+        results["Multiplica Dam"] = [fit4.params[p] for p in params] + [fit4.sse]
+        print(results)
+        best = results.loc["SSE"][results.loc["SSE"].iloc[:].values.argmin()]
+        print("BEST ETS: " + str(best))
+
+        best_fit = all_fits[results.loc["SSE"].iloc[:].values.argmin()]
+
+        y_ets = best_fit.fittedvalues
+        y_pos = y_pos - 0.0001
+        
+        if not useSavedModels or not os.path.isfile(SavePath+"_mlp_vr_residual.pckl"):
+            ag_mlp_vr_residual = AGMLP_VR_Residual(y_pos, y_ets,
+                                                   num_epochs = numberGenerations,
+                                                   size_pop = popsize, prob_mut=0.2,
+                                                   tr_ts_percents=tr_ts_percents).search_best_model()
+            best_mlp_vr_residual = ag_mlp_vr_residual._best_of_all
+            pickle.dump(best_mlp_vr_residual, open(SavePath+"mlp_vr_residual.pckl", 'wb'))
+        else:
+            best_mlp_vr_residual = pickle.load(open(SavePath+"mlp_vr_residual.pckl", 'rb'))
+
+        best = best_mlp_vr_residual
+        erro = y_pos - y_ets
+        erro_train_entrada, _, erro_test_entrada, _ = train_test_split_noExog(erro, best[0], tr_ts_percents)
+        erro_estimado = np.concatenate((best[-3].VR_predict(erro_train_entrada), best[-3].VR_predict(erro_test_entrada)))
+        _, _, X_ass_1_test_in, _ = train_test_split_noExog(y_ets, best[1], tr_ts_percents)
+        _, _, X_ass_2_test_in, _ = train_test_split_prev(erro_estimado, best[2], best[3], tr_ts_percents)
+        X_in_test = np.concatenate((X_ass_1_test_in, X_ass_2_test_in), axis=1) 
+        y_hat = best[-2].VR_predict(X_in_test)
+
+        return y_hat
+
+    def _applySARIMAXAGMLPEnsemble(self, endo_var, exog_var_matrix, SavePath, tr_ts_percents=[80,20],
+     popsize=10, numberGenerations=3, useSavedModels = True):
         # TODO: make mlopt.timeseries.TimeSeriesUtils functions that concats with pmdarima output to PSO-ACO search increase the searching createria with Exogenous variables
         p = [0, 1, 2]
         d = [0, 1]
@@ -225,15 +271,15 @@ class TimeSeriesTester():
         mape_pso_aco = MAPE(y_sarimax_PSO_ACO, endo_var)
         print("Mape: {0}".format(mape_pso_aco))
 
-        if not useSavedModels or not os.path.isfile(SavePath+"_mlp_vr_residual.pckl"):
+        if not useSavedModels or not os.path.isfile(SavePath+"sarimax_mlp_vr_residual.pckl"):
             ag_mlp_vr_residual = AGMLP_VR_Residual(endo_var, y_sarimax_PSO_ACO,
                                                    num_epochs = numberGenerations,
                                                    size_pop = popsize, prob_mut=0.2,
                                                    tr_ts_percents=tr_ts_percents).search_best_model()
             best_mlp_vr_residual = ag_mlp_vr_residual._best_of_all
-            pickle.dump(best_mlp_vr_residual, open(SavePath+"mlp_vr_residual.pckl", 'wb'))
+            pickle.dump(best_mlp_vr_residual, open(SavePath+"sarimax_vr_residual.pckl", 'wb'))
         else:
-            best_mlp_vr_residual = pickle.load(open(SavePath+"mlp_vr_residual.pckl", 'rb'))
+            best_mlp_vr_residual = pickle.load(open(SavePath+"sarimax_vr_residual.pckl", 'rb'))
 
         best = best_mlp_vr_residual
         erro = endo_var - y_sarimax_PSO_ACO
@@ -242,9 +288,9 @@ class TimeSeriesTester():
         _, _, X_ass_1_test_in, _ = train_test_split_noExog(y_sarimax_PSO_ACO, best[1], tr_ts_percents)
         _, _, X_ass_2_test_in, _ = train_test_split_prev(erro_estimado, best[2], best[3], tr_ts_percents)
         X_in_test = np.concatenate((X_ass_1_test_in, X_ass_2_test_in), axis=1) 
-        y_estimado_so_test = best[-2].VR_predict(X_in_test)
+        y_hat = best[-2].VR_predict(X_in_test)
 
-        return y_estimado_so_test
+        return y_hat
 
 
     def _saveResults(self, y_test, y_hats, labels, save_path, timestap_now, metricsThreshHold):
@@ -266,14 +312,17 @@ class TimeSeriesTester():
 
         return None
 
-    def plotResults(self, save_path="./TimeSeriesTester/", title="Time Series Tester Results", transformation=115000, ticksX=None, ticksScapeFrequency=3):
+    @classmethod
+    def plotResults(self,save_path="./TimeSeriesTester/", title="Time Series Tester Results", transformation=115000, ticksX=None, ticksScapeFrequency=3):
         _, ax = plt.subplots(1,1, figsize=(14,7), dpi=300)
         y_test = np.loadtxt(save_path+"y_test")
         y_hats_files= [x for x in os.listdir(save_path) if "y" in x and "test" not in x]
         y_hats = [np.loadtxt(save_path+x) for x in y_hats_files]
         labels = list(map(lambda x: x.split('_')[-1], y_hats_files))
 
-        if not isinstance(ticksX,(list,pd.core.series.Series,np.ndarray)):
+        if isinstance(ticksX,(list,pd.core.series.Series,pd.core.indexes.base.Index,np.ndarray)):
+            ticksX = ticksX[-y_test.shape[0]:]
+        else:
             ticksX = np.arange(y_test.shape[0])
         
         ax.plot(ticksX, y_test*transformation, 'k-o', label='Testa Data', linewidth=2.0)
@@ -303,7 +352,8 @@ class TimeSeriesTester():
         """
             autoMlsToExecute="All"
 
-            or insert the automls in a list like autoMlsToExecute=["tpot", "hpsklearn", "autokeras", "agmmff", "acolstm", "acoclstm", "ets", "SARIMAXAGMLPEnsemble"]
+            or insert the automls in a list like autoMlsToExecute=["tpot", "hpsklearn", "autokeras", "agmmff", "acolstm", 
+                "acoclstm", "ets", "SARIMAXAGMLPEnsemble", "ETSAGMLPEnsemble"]
 
             popsize: is utilize in the evolutiary based algorithms
 
@@ -391,7 +441,7 @@ class TimeSeriesTester():
                 print("AGMMFF Evaluation...")
                 if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_AGMMFF"):
                     y_hat_agmmff= self._applyGAMMFF(X_train, y_train, X_test, y_test,
-                                                   save_path+"/mmffModel_{0}".format(timestamp_now),
+                                                   save_path+"/mmffModel_".format(timestamp_now),
                                                    size_pop=popsize, epochs=numberGenerations,
                                                     useSavedModels = useSavedModels)
                     np.savetxt(save_path+"/y_hat_AGMMFF", y_hat_agmmff, delimiter=';')
@@ -404,8 +454,6 @@ class TimeSeriesTester():
             except Exception:
                 traceback.print_exc()
                 pass
-
-        # TODO: apply only SARIMAX TOO
 
         if "SARIMAXAGMLPEnsemble" in autoMlsToExecute or autoMlsToExecute=="All":
             try:
@@ -422,6 +470,25 @@ class TimeSeriesTester():
                 print("SHAPE HAT {0}".format(y_hat_sarimxagmlpensemble.shape))
                 y_hats.append(y_hat_sarimxagmlpensemble)
                 labels.append("SARIMAXAGMLPEnsemble")
+            except Exception:
+                traceback.print_exc()
+                pass
+
+        if "ETSAGMLPEnsemble" in autoMlsToExecute or autoMlsToExecute=="All":
+            try:
+                print("SARIMAXAGMLPEnsemble Evaluation...")
+                if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_etsagmlpensemble"):
+                    y_hat_etsagmlpensemble = self._applyETSMLPEnsemble(y_data, SavePath=save_path,
+                                                                            tr_ts_percents=train_test_split,
+                                                                            popsize=popsize,
+                                                                            numberGenerations=numberGenerations)
+                    np.savetxt(save_path+"/y_hat_etsagmlpensemble", y_hat_etsagmlpensemble, delimiter=';')
+                else:
+                    y_hat_etsagmlpensemble = np.loadtxt(save_path+"/y_hat_etsagmlpensemble", delimiter=';')
+
+                print("SHAPE HAT {0}".format(y_hat_etsagmlpensemble.shape))
+                y_hats.append(y_hat_etsagmlpensemble)
+                labels.append("ETSAGMLPEnsemble")
             except Exception:
                 traceback.print_exc()
                 pass
