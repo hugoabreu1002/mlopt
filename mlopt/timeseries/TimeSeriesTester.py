@@ -313,12 +313,16 @@ class TimeSeriesTester():
         return None
 
     @classmethod
-    def plotResults(self,save_path="./TimeSeriesTester/", title="Time Series Tester Results", transformation=115000, ticksX=None, ticksScapeFrequency=3):
+    def plotResults(self,save_path="./TimeSeriesTester/", title="Time Series Tester Results", transformation=115000, ticksX=None, ticksScapeFrequency=3, labels=None):
+        plt.set_loglevel('WARNING')
+        
         _, ax = plt.subplots(1,1, figsize=(14,7), dpi=300)
         y_test = np.loadtxt(save_path+"y_test")
         y_hats_files= [x for x in os.listdir(save_path) if "y" in x and "test" not in x]
         y_hats = [np.loadtxt(save_path+x) for x in y_hats_files]
-        labels = list(map(lambda x: x.split('_')[-1], y_hats_files))
+
+        if not isinstance(labels,(list,pd.core.series.Series,pd.core.indexes.base.Index,np.ndarray)):
+            labels = list(map(lambda x: x.split('_')[-1], y_hats_files))
 
         if isinstance(ticksX,(list,pd.core.series.Series,pd.core.indexes.base.Index,np.ndarray)):
             ticksX = ticksX[-y_test.shape[0]:]
@@ -330,11 +334,11 @@ class TimeSeriesTester():
         for y_hat, plotlabel in zip(y_hats, labels):
             print("ploting... " + plotlabel)
             trueScale_yhat = transformation*y_hat
-            ax.plot(ticksX, trueScale_yhat, '--o', label=plotlabel)
+            ax.plot(ticksX, trueScale_yhat, '--o', label=plotlabel.upper())
 
         plt.xticks(ticksX[::ticksScapeFrequency], rotation=45, ha='right', fontsize=12)
         ax.grid(axis='x')
-        ax.legend(fontsize=13)
+        ax.legend(fontsize=12, bbox_to_anchor=(1.01,1), loc="upper left")
         ax.set_ylabel('W/m2', fontsize=14)
         ax.set_title(title, fontsize=14)
         plt.show()
