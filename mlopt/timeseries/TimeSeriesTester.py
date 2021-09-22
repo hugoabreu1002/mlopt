@@ -313,16 +313,23 @@ class TimeSeriesTester():
         return None
 
     @classmethod
-    def plotResults(self,save_path="./TimeSeriesTester/", title="Time Series Tester Results", transformation=115000, ticksX=None, ticksScapeFrequency=3, labels=None):
+    def plotResults(self,save_path="./TimeSeriesTester/", title="Time Series Tester Results", transformation=115000,
+                    ticksX=None, ticksScapeFrequency=3,
+                    labelsMap={"ACOLSTM":"ACO-LSTM", "etsagmlpensemble":"ETS-MLPs", "sarimaxagmlpensemble":"SARIMAX-MLPs"}):
+        """
+            to change labels, input a mapping dict. Use the last _ separated string as key, like:
+            labelsMap = {"ACOLSTM":"ACO-LSTM", "etsagmlpensemble":"ETS-MLPs", "sarimaxagmlpensemble":"SARIMAX-MLPs"}
+        """
         plt.set_loglevel('WARNING')
         
         _, ax = plt.subplots(1,1, figsize=(14,7), dpi=300)
         y_test = np.loadtxt(save_path+"y_test")
         y_hats_files= [x for x in os.listdir(save_path) if "y" in x and "test" not in x]
         y_hats = [np.loadtxt(save_path+x) for x in y_hats_files]
-
-        if not isinstance(labels,(list,pd.core.series.Series,pd.core.indexes.base.Index,np.ndarray)):
-            labels = list(map(lambda x: x.split('_')[-1], y_hats_files))
+        labels = list(map(lambda x: x.split('_')[-1], y_hats_files))
+        
+        if isinstance(labelsMap,(dict)):
+            labels = [labelsMap[l] if l in labelsMap.keys() else l for l in labels]
 
         if isinstance(ticksX,(list,pd.core.series.Series,pd.core.indexes.base.Index,np.ndarray)):
             ticksX = ticksX[-y_test.shape[0]:]
@@ -462,17 +469,17 @@ class TimeSeriesTester():
         if "SARIMAXAGMLPEnsemble" in autoMlsToExecute or autoMlsToExecute=="All":
             try:
                 print("SARIMAXAGMLPEnsemble Evaluation...")
-                if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_sarimxagmlpensemble"):
-                    y_hat_sarimxagmlpensemble = self._applySARIMAXAGMLPEnsemble(y_data, exog_data, SavePath=save_path,
+                if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_sarimaxagmlpensemble"):
+                    y_hat_sarimaxagmlpensemble = self._applySARIMAXAGMLPEnsemble(y_data, exog_data, SavePath=save_path,
                                                                                 tr_ts_percents=train_test_split,
                                                                                 popsize=popsize,
                                                                                 numberGenerations=numberGenerations)
-                    np.savetxt(save_path+"/y_hat_sarimxagmlpensemble", y_hat_sarimxagmlpensemble, delimiter=';')
+                    np.savetxt(save_path+"/y_hat_sarimaxagmlpensemble", y_hat_sarimaxagmlpensemble, delimiter=';')
                 else:
-                    y_hat_sarimxagmlpensemble = np.loadtxt(save_path+"/y_hat_sarimxagmlpensemble", delimiter=';')
+                    y_hat_sarimaxagmlpensemble = np.loadtxt(save_path+"/y_hat_sarimaxagmlpensemble", delimiter=';')
 
-                print("SHAPE HAT {0}".format(y_hat_sarimxagmlpensemble.shape))
-                y_hats.append(y_hat_sarimxagmlpensemble)
+                print("SHAPE HAT {0}".format(y_hat_sarimaxagmlpensemble.shape))
+                y_hats.append(y_hat_sarimaxagmlpensemble)
                 labels.append("SARIMAXAGMLPEnsemble")
             except Exception:
                 traceback.print_exc()
