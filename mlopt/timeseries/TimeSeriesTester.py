@@ -1,7 +1,7 @@
 from copy import copy
 
 from matplotlib import pyplot as plt
-from mlopt.mlopt.timeseries.AGMLP_VR_Residual import AGMLP_VR_Residual
+from timeseries.AGMLP_Residual import AGMLP_VR_Residual
 import pickle
 from .TimeSeriesUtils import sarimax_PSO_ACO_search, train_test_split_with_Exog, SMAPE, MAPE
 from .TimeSeriesUtils import train_test_split as train_test_split_noExog
@@ -478,25 +478,6 @@ class TimeSeriesTester():
                 traceback.print_exc()
                 pass
 
-        if "ETSAGMLPEnsemble" in autoMlsToExecute or autoMlsToExecute=="All":
-            try:
-                print("SARIMAXAGMLPEnsemble Evaluation...")
-                if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_etsagmlpensemble"):
-                    y_hat_etsagmlpensemble = self._applyETSMLPEnsemble(y_data, SavePath=save_path,
-                                                                            tr_ts_percents=train_test_split,
-                                                                            popsize=popsize,
-                                                                            numberGenerations=numberGenerations)
-                    np.savetxt(save_path+"/y_hat_etsagmlpensemble", y_hat_etsagmlpensemble, delimiter=';')
-                else:
-                    y_hat_etsagmlpensemble = np.loadtxt(save_path+"/y_hat_etsagmlpensemble", delimiter=';')
-
-                print("SHAPE HAT {0}".format(y_hat_etsagmlpensemble.shape))
-                y_hats.append(y_hat_etsagmlpensemble)
-                labels.append("ETSAGMLPEnsemble")
-            except Exception:
-                traceback.print_exc()
-                pass
-
         ##################################################################################################
         #################################### NO EXOG MODELS ##############################################    
         ##################################################################################################
@@ -541,6 +522,25 @@ class TimeSeriesTester():
                 print("SHAPE HAT {0}".format(y_hat_acoclstm.shape))
                 y_hats.append(y_hat_acoclstm)
                 labels.append("ACOCLSTM")
+            except Exception:
+                traceback.print_exc()
+                pass
+
+        if "ETSAGMLPEnsemble" in autoMlsToExecute or autoMlsToExecute=="All":
+            try:
+                print("SARIMAXAGMLPEnsemble Evaluation...")
+                if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_etsagmlpensemble"):
+                    y_hat_etsagmlpensemble = self._applyETSMLPEnsemble(y_data, SavePath=save_path,
+                                                                            tr_ts_percents=train_test_split,
+                                                                            popsize=popsize,
+                                                                            numberGenerations=numberGenerations)
+                    np.savetxt(save_path+"/y_hat_etsagmlpensemble", y_hat_etsagmlpensemble, delimiter=';')
+                else:
+                    y_hat_etsagmlpensemble = np.loadtxt(save_path+"/y_hat_etsagmlpensemble", delimiter=';')
+
+                print("SHAPE HAT {0}".format(y_hat_etsagmlpensemble.shape))
+                y_hats.append(y_hat_etsagmlpensemble)
+                labels.append("ETSAGMLPEnsemble")
             except Exception:
                 traceback.print_exc()
                 pass
