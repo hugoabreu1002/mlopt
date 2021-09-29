@@ -88,10 +88,10 @@ class AGMMFFBleding(MMFFBleding):
         super().__init__(X_train, y_train, X_test, y_test, models=None, blender=blender)
 
     def train(self):
-        bestVotingRegressor = self._ensembleSearch.search_best()._best_of_all
+        bestPoolRegressors = self._ensembleSearch.search_best()._best_of_all
         print("Regressors chosen:")
-        print(bestVotingRegressor.named_estimators_.items())
-        models = bestVotingRegressor.named_estimators_.items()
+        print(bestPoolRegressors.named_estimators_.items())
+        models = bestPoolRegressors.named_estimators_.items()
         self.set_models(models)
         # summarize data split
         print('Train: %s, Test: %s' % (self._X_train.shape, self._X_test.shape))

@@ -81,7 +81,7 @@ class ModelTrunk(keras.Model):
         return K.reshape(x, (-1, x.shape[1] * x.shape[2])) # flat vector of features out
 
 
-class Transformer():
+class TransformerKeras():
     """
         X_train: X_train for lstm.
         y_train: y_train for lstm.

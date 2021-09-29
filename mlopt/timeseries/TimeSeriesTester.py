@@ -1,7 +1,7 @@
 from copy import copy
 
 from matplotlib import pyplot as plt
-from timeseries.AGMLP_Residual import AGMLP_VR_Residual
+from .AGMLP_Residual import AGMLP_VR_Residual
 import pickle
 from .TimeSeriesUtils import sarimax_PSO_ACO_search, train_test_split_with_Exog, SMAPE, MAPE
 from .TimeSeriesUtils import train_test_split as train_test_split_noExog
@@ -382,9 +382,9 @@ class TimeSeriesTester():
                 raise ValueError("Exog has nan in column")
         
         if isinstance(exog_data,(list,pd.core.series.Series,np.ndarray)):
-            X_train, y_train, X_test, y_test  = train_test_split_with_Exog(y_data, exog_data, lags, train_test_split)
+            X_train, y_train, X_test, y_test = train_test_split_with_Exog(y_data, exog_data, lags, train_test_split)
         else:
-            X_train, y_train, X_test, y_test  = train_test_split_noExog(y_data, lags, train_test_split)
+            X_train, y_train, X_test, y_test = train_test_split_noExog(y_data, lags, train_test_split)
             
         timestamp_now = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 

@@ -8,11 +8,11 @@ warnings.filterwarnings("ignore")
 
 class AGMLP_Residual:
     """ A Residual correction aproach for time series"""
-    def __init__(self, data, y_sarimax, num_epochs = 10, size_pop=10, prob_mut=0.8, tr_ts_percents=[80,20], alpha_stop=1e-4):
+    def __init__(self, data, mainForecast, num_epochs = 10, size_pop=10, prob_mut=0.8, tr_ts_percents=[80,20], alpha_stop=1e-4):
         """
             data - original data
             
-            y_sarimax - forecasted data
+            mainForecast - forecasted data
             
             num_epochs - number of epochs
             
@@ -27,10 +27,10 @@ class AGMLP_Residual:
         self._data = data
         self._data_train = data[:int(tr_ts_percents[0]/100*len(data))]
         self._data_test = data[int(tr_ts_percents[0]/100*len(data)):]
-        self._y_sarimax = y_sarimax
-        self._erro = data-y_sarimax
-        self._data_train_arima = y_sarimax[:int(tr_ts_percents[0]/100*len(y_sarimax))]
-        self._data_test_arima = y_sarimax[int(tr_ts_percents[0]/100*len(y_sarimax)):]
+        self._mainForecast = mainForecast
+        self._erro = data-mainForecast
+        self._data_train_arima = mainForecast[:int(tr_ts_percents[0]/100*len(mainForecast))]
+        self._data_test_arima = mainForecast[int(tr_ts_percents[0]/100*len(mainForecast)):]
         self._num_epochs = num_epochs
         self._size_pop = size_pop
         self._prob_mut = prob_mut
@@ -128,7 +128,7 @@ class AGMLP_Residual:
             erro_estimado = np.concatenate([best_erro.predict(erro_train_entrada), best_erro.predict(erro_test_entrada)])
 
             #obter o y estimado
-            X_ass_1_train_in, _, X_ass_1_test_in, _ = self.train_test_split(self._y_sarimax, population[i][1])
+            X_ass_1_train_in, _, X_ass_1_test_in, _ = self.train_test_split(self._mainForecast, population[i][1])
             X_ass_2_train_in, _, X_ass_2_test_in, _ = self.train_test_split_prev(erro_estimado, population[i][2],
                                                                                  population[i][3])
 
@@ -225,6 +225,32 @@ class AGMLP_Residual:
                 
         return self
 
+    def forecastAhead(self, aheadLenght):
+        gen_day_ahead = self._data.copy()
+        y_hat_main_aheadn = self._mainForecast.copy()
+        
+        for i in range(aheadLenght):
+            
+            erro_day_ahead = gen_day_ahead - y_hat_main_aheadn
+
+            erro_estimado_for_forecast = self._best_of_all[4].predict(erro_day_ahead[-self._best_of_all[0]:].reshape(1,-1))
+
+            erro_fut = erro_day_ahead.copy()
+            for _ in range(self._best_of_all[3]):
+                erro_fut = np.append(erro_day_ahead, self._best_of_all[4].predict(erro_fut[-self._best_of_all[0]:].reshape(1,-1)))
+
+            X_ass_1_forecast_in = y_hat_main_aheadn[-self._best_of_all[1]-1:]
+            X_ass_2_forecast_in = np.concatenate((erro_estimado_for_forecast[-self._best_of_all[2]-1:], erro_fut[-self._best_of_all[3]-1:]))
+
+            X_in_forecast = np.concatenate((X_ass_1_forecast_in, X_ass_2_forecast_in))
+
+            y_forecast = self._best_of_all[5].predict(X_in_forecast.reshape(1,-1))
+
+            gen_day_ahead = np.append(gen_day_ahead, y_forecast)
+            y_hat_main_aheadn = np.append(y_hat_main_aheadn, y_hat_main_aheadn[i])
+
+        return y_hat_main_aheadn[-aheadLenght:]
+
 class AGMLP_VR_Residual(AGMLP_Residual):
     def gen_population(self):
         """
@@ -284,7 +310,7 @@ class AGMLP_VR_Residual(AGMLP_Residual):
             erro_estimado = np.concatenate([VR_mlps_erro.VR_predict(erro_train_entrada), VR_mlps_erro.VR_predict(erro_test_entrada)])
 
             #obtain o y_hat. In thtat case only X data is needed from train_test_split and train_test_split_prev methods
-            X_ass_1_train_in, _, X_ass_1_test_in, _ = self.train_test_split(self._y_sarimax, population[i][1])
+            X_ass_1_train_in, _, X_ass_1_test_in, _ = self.train_test_split(self._mainForecast, population[i][1])
             X_ass_2_train_in, _, X_ass_2_test_in, _ = self.train_test_split_prev(erro_estimado, population[i][2],
                                                                                  population[i][3])
             #concatanates the X data for training
@@ -301,3 +327,29 @@ class AGMLP_VR_Residual(AGMLP_Residual):
             population[i][-1] = mae(VR_mlps_ass.VR_predict(X_in_test), self._data_test)
 
         return population
+
+    def forecastAhead(self, aheadLenght):
+        gen_day_ahead = self._data.copy()
+        y_hat_main_aheadn = self._mainForecast.copy()
+        
+        for i in range(aheadLenght):
+            
+            erro_day_ahead = gen_day_ahead - y_hat_main_aheadn
+
+            erro_estimado_for_forecast = self._best_of_all[4].predict(erro_day_ahead[-self._best_of_all[0]:].reshape(1,-1))
+
+            erro_fut = erro_day_ahead.copy()
+            for _ in range(self._best_of_all[3]):
+                erro_fut = np.append(erro_day_ahead, self._best_of_all[4].predict(erro_fut[-self._best_of_all[0]:].reshape(1,-1)))
+
+            X_ass_1_forecast_in = y_hat_main_aheadn[-self._best_of_all[1]-1:]
+            X_ass_2_forecast_in = np.concatenate((erro_estimado_for_forecast[-self._best_of_all[2]-1:], erro_fut[-self._best_of_all[3]-1:]))
+
+            X_in_forecast = np.concatenate((X_ass_1_forecast_in, X_ass_2_forecast_in))
+
+            y_forecast = self._best_of_all[5].predict(X_in_forecast.reshape(1,-1))
+
+            gen_day_ahead = np.append(gen_day_ahead, y_forecast)
+            y_hat_main_aheadn = np.append(y_hat_main_aheadn, y_hat_main_aheadn[i])
+
+        return y_hat_main_aheadn[-aheadLenght:]
