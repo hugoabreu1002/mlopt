@@ -113,7 +113,9 @@ class TransformerKeras():
 
         return min_lr
 
-    def fitModel(self, time2vec_dim=1, num_heads=2, head_size=128, ff_dim=None, num_layers=1, dropout=0, epochs=300, early_stop=True, verbose=True, lr_warmnup=True):
+    def fitModel(self, time2vec_dim=1, num_heads=2, head_size=128, ff_dim=None,
+                 num_layers=1, dropout=0, epochs=300,
+                 early_stop=True, verbose=True, lr_warmnup=True, patience=None):
 
         Model = None
         K.clear_session()
@@ -136,10 +138,11 @@ class TransformerKeras():
             raise("y train has nan")
 
         # simple early stopping
+        if patience == None:
+            patience = 10
+
         if early_stop:
-            es = EarlyStopping(monitor='loss', mode='auto', patience=5, verbose=1)
-        else:
-            es = EarlyStopping(monitor='loss', mode='auto', patience=100, verbose=1)
+            es = EarlyStopping(monitor='loss', mode='auto', patience=patience, verbose=1)
 
         my_callbacks = [es]
         if lr_warmnup:
@@ -147,5 +150,4 @@ class TransformerKeras():
 
         Model.fit(self._X_train, self._y_train, epochs=epochs, shuffle=False, use_multiprocessing=True, callbacks=my_callbacks, verbose=verbose)
 
-        
         return Model
