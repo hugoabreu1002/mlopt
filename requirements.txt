@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 scikit-learn
 numpy
 pyswarms
@@ -12,3 +13,19 @@ autokeras
 tpot
 pmdarima
 hpsklearn
+=======
+scikit-learn
+numpy
+pyswarms
+tqdm
+scipy
+statsmodels
+pandas
+matplotlib
+sparse
+tensorflow
+autokeras
+tpot
+pmdarima
+hpsklearn
+>>>>>>> 528117deb4f54cfca8fe0a9f1a5280c2431103b0
