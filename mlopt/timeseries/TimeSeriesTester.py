@@ -293,7 +293,7 @@ class TimeSeriesTester():
         return y_hat
 
 
-    def _saveResults(self, y_test, y_hats, labels, save_path, timestap_now, metricsThreshHold):
+    def _saveResults(self, y_test, y_hats, labels, save_path, timestap_now, metricsThreshHold, customMetric=None):
         logResults = ""
         logResults += "Scores" + "\n"
         print("Scores")
@@ -304,6 +304,16 @@ class TimeSeriesTester():
             logResults += "{0} ".format(plotlabel) + "- MAPE: %.4f" % MAPE(y_test, y_hat, metricsThreshHold) + "\n"
             logResults += "{0} ".format(plotlabel) + "- SMAPE: %.4f" % SMAPE(y_test, y_hat, metricsThreshHold) + "\n"
             logResults += "{0} ".format(plotlabel) + "- MSE: %.4f" % mean_squared_error(y_test, y_hat) + "\n"
+            if customMetric != None:
+                metric_name = list(customMetric.keys())[0]
+                metric_func = customMetric[metric_name]
+
+                print(y_test.shape)
+                print(y_hat.shape)
+                print(metric_func(y_test, y_hat))
+                
+                logResults += "{0} ".format(plotlabel) + "- {0}:".format(metric_name) + " %.4f" % metric_func(y_test, y_hat) + "\n"
+            
 
         with open(save_path+"/results_{0}.txt".format(timestap_now), "w") as text_file:
             text_file.write(logResults)
@@ -357,7 +367,8 @@ class TimeSeriesTester():
     def executeTests(self, y_data, exog_data=None, autoMlsToExecute="All", train_test_split=[80,20],
                      lags=24, useSavedModels=True, useSavedArrays=True, popsize=10, numberGenerations=5,
                      metricsThreshHold=0.1,
-                     save_path="./TimeSeriesTester/"):
+                     save_path="./TimeSeriesTester/", 
+                     customMetric=None):
 
         # TODO modificar parametros de cada um dos automls
         """
@@ -371,6 +382,8 @@ class TimeSeriesTester():
             numberGenerations: is utilize in the evolutiary based algorithms
 
             metricsThreshHold: applies to MAPE and SMAPE metrics
+
+            customMetric; inset a dict like {"metric name":metric_function}. metric_function should receive (y_test, y_hat) as arguments
         """
         if np.isnan(np.sum(y_data)):
             raise("Gen still has nan")
@@ -568,4 +581,4 @@ class TimeSeriesTester():
                 traceback.print_exc()
                 pass
 
-        self._saveResults(y_test, y_hats, labels, save_path, timestamp_now, metricsThreshHold)
+        self._saveResults(y_test, y_hats, labels, save_path, timestamp_now, metricsThreshHold, customMetric)
