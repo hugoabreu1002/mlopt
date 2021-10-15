@@ -597,4 +597,4 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
 
     results = mod.fit(disp=False)
 
-    return results.predict()
+    return results, results.predict()

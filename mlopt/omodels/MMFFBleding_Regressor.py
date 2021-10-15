@@ -8,7 +8,8 @@ from .EnsembleSearch import EnsembleSearch
 
 class MMFFBleding:
 
-    def __init__(self,X_train, y_train, X_test, y_test, models=[('mlp', MLP()), ('rfr', RFR()), ('gbr', GBR()), ('svm', SVR())],
+    def __init__(self,X_train, y_train, X_test, y_test,
+                 models=[('mlp', MLP()), ('rfr', RFR()), ('gbr', GBR()), ('svm', SVR())],
                  blender = DecisionTreeRegressor()):
         
         self._X_train = X_train
@@ -55,7 +56,7 @@ class MMFFBleding:
             # reshape predictions into a matrix with one column
             yhat = yhat.reshape(len(yhat), 1)
             # store prediction
-            meta_X.append(yhat)
+            meta_X.append(yhat)               
         # create 2d array from predictions, each set is an input feature
         meta_X = hstack(meta_X)
         # predict
@@ -69,25 +70,32 @@ class MMFFBleding:
 
         return self._blender
 
-    def predict(self, X_test, blender=None, models=None):
+    def predict(self, X, models=None, blender=None):
         # make a prediction on a new row of data
         if blender == None:
             blender = self._blender
         if models == None:
             models = self._models
                 
-        yhat = self.predict_ensemble(models, blender, X_test)
+        yhat = self.predict_ensemble(models, blender, X)
 
         return yhat
 
-
 class AGMMFFBleding(MMFFBleding):
 
-    def __init__(self, X_train, y_train, X_test, y_test, blender = DecisionTreeRegressor(), epochs=5, size_pop=40, verbose=True):
-        self._ensembleSearch = EnsembleSearch(X_train, y_train, X_test, y_test, epochs=epochs, size_pop=size_pop, verbose=verbose)
-        super().__init__(X_train, y_train, X_test, y_test, models=None, blender=blender)
+    def __init__(self, X_train, y_train, X_test, y_test,
+                 blender = DecisionTreeRegressor(),
+                 epochs=5, size_pop=40, verbose=True):
+        
+        self._epochs = epochs
+        self._size_pop = size_pop
+        self._verbose = verbose
+        super().__init__(X_train, y_train, X_test, y_test, blender=blender)
 
     def train(self):
+        self._ensembleSearch = EnsembleSearch(self._X_train, self._y_train, self._X_test,
+                                              self._y_test, epochs=self._epochs,
+                                              size_pop=self._size_pop, verbose=self._verbose)
         bestPoolRegressors = self._ensembleSearch.search_best()._best_of_all
         print("Regressors chosen:")
         print(bestPoolRegressors.named_estimators_.items())
