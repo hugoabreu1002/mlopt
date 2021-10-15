@@ -221,10 +221,12 @@ class TimeSeriesTester():
         best = results.loc["SSE"][results.loc["SSE"].iloc[:].values.argmin()]
         print("BEST ETS: " + str(best))
 
-        best_fit = all_fits[results.loc["SSE"].iloc[:].values.argmin()]
+        best_ets = all_fits[results.loc["SSE"].iloc[:].values.argmin()]
 
-        y_ets = best_fit.fittedvalues
+        y_ets = best_ets.fittedvalues
         y_pos = y_pos - 0.0001
+
+        pickle.dump(best_ets, open(SavePath+"best_ets", 'wb'))
         
         if not useSavedModels or not os.path.isfile(SavePath+"ets_vr_residual.pckl"):
             ag_mlp_vr_residual = AGMLP_VR_Residual(y_pos, y_ets,
@@ -619,10 +621,14 @@ class TimeSeriesTester():
         if "ETSAGMLPEnsemble" in autoMlsToExecute or autoMlsToExecute=="All":
             try:
                 print("ETSAGMLPEnsemble Evaluation...")
-                y_ets = pickle.load(open(save_path+"ets_model",'rb'))
+                ets_model = pickle.load(open(save_path+"best_ets",'rb'))
                 best_mlp_vr_residual = pickle.load(open(save_path+"ets_vr_residual.pckl", 'rb'))
-                y_hat_etsmlp = AGMLP_VR_Residual(y_data, y_ets.predict()).forecastAhead(K, y_ets.forecast(K), bestObject=best_mlp_vr_residual)
+                ets_insample = ets_model.fittedvalues
+                ets_outsample = ets_model.forecast(K)
+                ets_in_out_samples = np.concatenate((ets_insample, ets_outsample))
+                y_hat_etsmlp = AGMLP_VR_Residual(y_data, ets_insample).forecastAhead(K, ets_in_out_samples, bestObject=best_mlp_vr_residual)
                 y_hats["ETSAGMLPEnsemble"]=y_hat_etsmlp[-K:]
+                y_hats["ETS"]=ets_outsample
             except Exception:
                 traceback.print_exc()
                 pass

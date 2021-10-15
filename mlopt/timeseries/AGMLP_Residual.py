@@ -385,22 +385,26 @@ class AGMLP_VR_Residual(AGMLP_Residual):
         
         for i in range(K):
             
-            erro_day_ahead = y_true_data - y_hat_main_aheadn[:len(y_true_data)+i]
+            erro_samples_ahead = y_true_data - y_hat_main_aheadn[:len(y_true_data)]
 
             erro_estimado_for_forecast = error_model.VR_predict(
-                erro_day_ahead[-lag_residue_regression:].reshape(1,-1))
+                erro_samples_ahead[-lag_residue_regression:].reshape(1,-1))
 
-            erro_fut = erro_day_ahead.copy()
+            erro_fut = erro_samples_ahead.copy()
             for _ in range(forecast_estimated_residue):
-                erro_fut = np.append(erro_day_ahead, error_model.VR_predict(
+                erro_fut = np.append(erro_samples_ahead, error_model.VR_predict(
                     erro_fut[-lag_residue_regression:].reshape(1,-1)))
 
-            X_ass_1_forecast_in = y_hat_main_aheadn[-self._best_of_all[lag_original_association_index]-1:]
+            X_ass_1_forecast_in = y_hat_main_aheadn[-bestObject[lag_original_association_index]-1:]
             X_ass_2_forecast_in = np.concatenate((
-                erro_estimado_for_forecast[-lag_estimated_residue-1:], erro_fut[forecast_estimated_residue-1:]))
+                erro_estimado_for_forecast[-lag_estimated_residue-1:], erro_fut[:forecast_estimated_residue]))
 
             X_in_forecast = np.concatenate((X_ass_1_forecast_in, X_ass_2_forecast_in))
 
+            # print(X_ass_1_forecast_in.shape)
+            # print(X_ass_2_forecast_in.shape)
+            # print(X_in_forecast.shape)
+            
             y_forecast = ass_model.VR_predict(X_in_forecast.reshape(1,-1))
 
             y_true_data = np.append(y_true_data, y_forecast)
