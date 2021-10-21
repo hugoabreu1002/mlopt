@@ -9,4 +9,4 @@ Here I will keep the Algorithms that I wrote, or cool examples with packages tha
 
 ## Examples
 
-Check the notebooks folder
+Check the notebooks folder [examples](examples)
