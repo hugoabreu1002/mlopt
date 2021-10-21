@@ -225,31 +225,54 @@ class AGMLP_Residual:
                 
         return self
 
-    def forecastAhead(self, aheadLenght):
-        gen_day_ahead = self._data.copy()
-        y_hat_main_aheadn = self._mainForecast.copy()
-        
-        for i in range(aheadLenght):
-            
-            erro_day_ahead = gen_day_ahead - y_hat_main_aheadn
+    def forecast_ahead(self, K, y_hat_main_aheadn, lag_residue_regression_index=0,
+                      lag_original_association_index=1,
+                      lag_estimated_residue_index=2,
+                      forecast_estimated_residue_index=3,
+                      error_object_index=4,
+                      ass_object_index=5):
+        """
+            K - number of samples ahead
 
-            erro_estimado_for_forecast = self._best_of_all[4].predict(erro_day_ahead[-self._best_of_all[0]:].reshape(1,-1))
+            y_hat_main_aheadn - comes from main model
+
+            self._best_of_all : [lag_residue_regression, lag_original_association, lag_estimated_residue, forecast_estimated_residue
+            , 'object_resiue_regression', 'object_association', fitness]
+        """
+
+        # TODO poder utilizar também com _best_of_all já exportados...
+        
+        gen_day_ahead = self._data.copy()
+        
+        lag_residue_regression = self._best_of_all[lag_residue_regression_index]
+        forecast_estimated_residue = self._best_of_all[forecast_estimated_residue_index]
+        lag_estimated_residue = self._best_of_all[lag_estimated_residue_index]
+        error_model = self._best_of_all[error_object_index]
+        ass_model = self._best_of_all[ass_object_index]
+        
+        for i in range(K):
+            
+            erro_day_ahead = gen_day_ahead - y_hat_main_aheadn[:len(gen_day_ahead)+i]
+
+            erro_estimado_for_forecast = error_model.predict(
+                erro_day_ahead[-lag_residue_regression:].reshape(1,-1))
 
             erro_fut = erro_day_ahead.copy()
-            for _ in range(self._best_of_all[3]):
-                erro_fut = np.append(erro_day_ahead, self._best_of_all[4].predict(erro_fut[-self._best_of_all[0]:].reshape(1,-1)))
+            for _ in range(forecast_estimated_residue):
+                erro_fut = np.append(erro_day_ahead, error_model.predict(
+                    erro_fut[-lag_residue_regression:].reshape(1,-1)))
 
-            X_ass_1_forecast_in = y_hat_main_aheadn[-self._best_of_all[1]-1:]
-            X_ass_2_forecast_in = np.concatenate((erro_estimado_for_forecast[-self._best_of_all[2]-1:], erro_fut[-self._best_of_all[3]-1:]))
+            X_ass_1_forecast_in = y_hat_main_aheadn[-self._best_of_all[lag_original_association_index]-1:]
+            X_ass_2_forecast_in = np.concatenate((
+                erro_estimado_for_forecast[-lag_estimated_residue-1:], erro_fut[forecast_estimated_residue-1:]))
 
             X_in_forecast = np.concatenate((X_ass_1_forecast_in, X_ass_2_forecast_in))
 
-            y_forecast = self._best_of_all[5].predict(X_in_forecast.reshape(1,-1))
+            y_forecast = ass_model.predict(X_in_forecast.reshape(1,-1))
 
             gen_day_ahead = np.append(gen_day_ahead, y_forecast)
-            y_hat_main_aheadn = np.append(y_hat_main_aheadn, y_hat_main_aheadn[i])
 
-        return y_hat_main_aheadn[-aheadLenght:]
+        return gen_day_ahead[-K:]
 
 class AGMLP_VR_Residual(AGMLP_Residual):
     def gen_population(self):
@@ -328,28 +351,63 @@ class AGMLP_VR_Residual(AGMLP_Residual):
 
         return population
 
-    def forecastAhead(self, aheadLenght):
-        gen_day_ahead = self._data.copy()
-        y_hat_main_aheadn = self._mainForecast.copy()
+    def forecastAhead(self, K, y_hat_main_aheadn,
+                      y_true_data=None,
+                      lag_residue_regression_index=0,
+                      lag_original_association_index=1,
+                      lag_estimated_residue_index=2,
+                      forecast_estimated_residue_index=3,
+                      error_object_index=5,
+                      ass_object_index=6,
+                      bestObject=None):
+        """
+            K - number of samples ahead
+
+            y_hat_main_aheadn - comes from main model
+
+            self._best_of_all : [lag_residue_model, lag_original_main_model_association, lag_estimated_residue, forecast_estimated_residue,
+            'percentage_of_mlps', 'object_resiue_model', 'object_association', fitness]
+        """
+
+        # TODO poder utilizar também com _best_of_all já exportados...
+
+        if y_true_data == None:
+            y_true_data = self._data.copy()
+
+        if bestObject == None:
+            bestObject = self._best_of_all
         
-        for i in range(aheadLenght):
+        lag_residue_regression = bestObject[lag_residue_regression_index]
+        forecast_estimated_residue = bestObject[forecast_estimated_residue_index]
+        lag_estimated_residue = bestObject[lag_estimated_residue_index]
+        error_model = bestObject[error_object_index]
+        ass_model = bestObject[ass_object_index]
+        
+        for i in range(K):
             
-            erro_day_ahead = gen_day_ahead - y_hat_main_aheadn
+            erro_samples_ahead = y_true_data - y_hat_main_aheadn[:len(y_true_data)]
 
-            erro_estimado_for_forecast = self._best_of_all[4].predict(erro_day_ahead[-self._best_of_all[0]:].reshape(1,-1))
+            erro_estimado_for_forecast = error_model.VR_predict(
+                erro_samples_ahead[-lag_residue_regression:].reshape(1,-1))
 
-            erro_fut = erro_day_ahead.copy()
-            for _ in range(self._best_of_all[3]):
-                erro_fut = np.append(erro_day_ahead, self._best_of_all[4].predict(erro_fut[-self._best_of_all[0]:].reshape(1,-1)))
+            erro_fut = erro_samples_ahead.copy()
+            for _ in range(forecast_estimated_residue):
+                erro_fut = np.append(erro_samples_ahead, error_model.VR_predict(
+                    erro_fut[-lag_residue_regression:].reshape(1,-1)))
 
-            X_ass_1_forecast_in = y_hat_main_aheadn[-self._best_of_all[1]-1:]
-            X_ass_2_forecast_in = np.concatenate((erro_estimado_for_forecast[-self._best_of_all[2]-1:], erro_fut[-self._best_of_all[3]-1:]))
+            X_ass_1_forecast_in = y_hat_main_aheadn[-bestObject[lag_original_association_index]-1:]
+            X_ass_2_forecast_in = np.concatenate((
+                erro_estimado_for_forecast[-lag_estimated_residue-1:], erro_fut[:forecast_estimated_residue]))
 
             X_in_forecast = np.concatenate((X_ass_1_forecast_in, X_ass_2_forecast_in))
 
-            y_forecast = self._best_of_all[5].predict(X_in_forecast.reshape(1,-1))
+            # print(X_ass_1_forecast_in.shape)
+            # print(X_ass_2_forecast_in.shape)
+            # print(X_in_forecast.shape)
+            
+            y_forecast = ass_model.VR_predict(X_in_forecast.reshape(1,-1))
 
-            gen_day_ahead = np.append(gen_day_ahead, y_forecast)
+            y_true_data = np.append(y_true_data, y_forecast)
             y_hat_main_aheadn = np.append(y_hat_main_aheadn, y_hat_main_aheadn[i])
 
-        return y_hat_main_aheadn[-aheadLenght:]
+        return y_true_data[-K:]

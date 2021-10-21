@@ -158,15 +158,15 @@ class TimeSeriesTester():
                     epochs=5, size_pop=40, useSavedModels = True):
 
         agMMGGBlending = AGMMFFBleding(X_train, y_train, X_test, y_test, epochs=epochs, size_pop=size_pop, verbose=self._verbose)
-        if not useSavedModels or not (os.path.isfile(SavePath+"_blender.pckl") and os.path.isfile(SavePath+"_models.pckl")):
+        if not useSavedModels or not (os.path.isfile(SavePath+"blender.pckl") and os.path.isfile(SavePath+"models.pckl")):
             final_models, final_blender = agMMGGBlending.train()
-            y_hat = agMMGGBlending.predict(X_test=X_test, blender=final_blender, models=final_models)
-            pickle.dump(final_blender, open(SavePath+"_blender.pckl", 'wb'))
-            pickle.dump(final_blender, open(SavePath+"_models.pckl", 'wb'))
+            y_hat = agMMGGBlending.predict(X=X_test, blender=final_blender, models=final_models)
+            pickle.dump(final_blender, open(SavePath+"blender.pckl", 'wb'))
+            pickle.dump(list(final_models), open(SavePath+"models.pckl", 'wb'))
         else:
-            final_blender = pickle.load(open(SavePath+"_blender.pckl", 'rb'))
-            final_models = pickle.load(open(SavePath+"_models.pckl", 'rb'))
-            y_hat = agMMGGBlending.predict(X_test=X_test, blender=final_blender, models=final_models)
+            final_blender = pickle.load(open(SavePath+"blender.pckl", 'rb'))
+            final_models = pickle.load(open(SavePath+"models.pckl", 'rb'))[0]
+            y_hat = agMMGGBlending.predict(X=X_test, blender=final_blender, models=final_models)
             
 
         print("AGMMFF - Score: ")
@@ -221,20 +221,22 @@ class TimeSeriesTester():
         best = results.loc["SSE"][results.loc["SSE"].iloc[:].values.argmin()]
         print("BEST ETS: " + str(best))
 
-        best_fit = all_fits[results.loc["SSE"].iloc[:].values.argmin()]
+        best_ets = all_fits[results.loc["SSE"].iloc[:].values.argmin()]
 
-        y_ets = best_fit.fittedvalues
+        y_ets = best_ets.fittedvalues
         y_pos = y_pos - 0.0001
+
+        pickle.dump(best_ets, open(SavePath+"best_ets", 'wb'))
         
-        if not useSavedModels or not os.path.isfile(SavePath+"_mlp_vr_residual.pckl"):
+        if not useSavedModels or not os.path.isfile(SavePath+"ets_vr_residual.pckl"):
             ag_mlp_vr_residual = AGMLP_VR_Residual(y_pos, y_ets,
                                                    num_epochs = numberGenerations,
                                                    size_pop = popsize, prob_mut=0.2,
                                                    tr_ts_percents=tr_ts_percents).search_best_model()
             best_mlp_vr_residual = ag_mlp_vr_residual._best_of_all
-            pickle.dump(best_mlp_vr_residual, open(SavePath+"mlp_vr_residual.pckl", 'wb'))
+            pickle.dump(best_mlp_vr_residual, open(SavePath+"ets_vr_residual.pckl", 'wb'))
         else:
-            best_mlp_vr_residual = pickle.load(open(SavePath+"mlp_vr_residual.pckl", 'rb'))
+            best_mlp_vr_residual = pickle.load(open(SavePath+"ets_vr_residual.pckl", 'rb'))
 
         best = best_mlp_vr_residual
         erro = y_pos - y_ets
@@ -249,29 +251,31 @@ class TimeSeriesTester():
 
     def _applySARIMAXAGMLPEnsemble(self, endo_var, exog_var_matrix, SavePath, tr_ts_percents=[80,20],
      popsize=10, numberGenerations=3, useSavedModels = True):
-        # TODO: make mlopt.timeseries.TimeSeriesUtils functions that concats with pmdarima output to PSO-ACO search increase the searching createria with Exogenous variables
-        p = [0, 1, 2]
-        d = [0, 1]
-        q = [0, 1, 2, 3]
-        sp = [0, 1, 2]
-        sd = [0, 1]
-        sq = [0, 1, 2, 3]
-        s = [24] #como são dados horarios...
-        # search Space, exog possibilities comes in the functions.
-        searchSpace = [p, d, q, sp, sd, sq, s]
 
-        options_PSO = {'n_particles':5,'n_iterations':3,'c1': 0.5, 'c2': 0.3, 'w': 0.9, 'k': 3, 'p': 2}
-        options_ACO = {'antNumber':popsize, 'antTours':numberGenerations, 'alpha':2, 'beta':2, 'rho':0.5, 'Q':2}
-        y_sarimax_PSO_ACO = sarimax_PSO_ACO_search(endo_var=endo_var, exog_var_matrix=exog_var_matrix,
-                                                   searchSpace=copy(searchSpace), 
-                                                   options_PSO=options_PSO,
-                                                   options_ACO=options_ACO,
-                                                   verbose=self._verbose)
+        if not useSavedModels or not os.path.isfile(SavePath+"y_sarimax_pso_aco"):
+            p = [0, 1, 2]
+            d = [0, 1]
+            q = [0, 1, 2, 3]
+            sp = [0, 1, 2]
+            sd = [0, 1]
+            sq = [0, 1, 2, 3]
+            s = [24] #como são dados horarios...
+            # search Space, exog possibilities comes in the functions.
+            searchSpace = [p, d, q, sp, sd, sq, s]
 
-        mape_pso_aco = MAPE(y_sarimax_PSO_ACO, endo_var)
-        print("Mape: {0}".format(mape_pso_aco))
-
-        if not useSavedModels or not os.path.isfile(SavePath+"sarimax_mlp_vr_residual.pckl"):
+            options_PSO = {'n_particles':5,'n_iterations':3,'c1': 0.5, 'c2': 0.3, 'w': 0.9, 'k': 3, 'p': 2}
+            options_ACO = {'antNumber':popsize, 'antTours':numberGenerations, 'alpha':2, 'beta':2, 'rho':0.5, 'Q':2}
+            results_model, y_sarimax_PSO_ACO = sarimax_PSO_ACO_search(endo_var=endo_var, exog_var_matrix=exog_var_matrix,
+                                                        searchSpace=copy(searchSpace), 
+                                                        options_PSO=options_PSO,
+                                                        options_ACO=options_ACO,
+                                                        verbose=self._verbose)
+            
+            pickle.dump(results_model, open(SavePath+"sarimax_pso_aco", 'wb'))
+        else:
+            y_sarimax_PSO_ACO = pickle.load(open(SavePath+"sarimax_pso_aco", delimiter=';')).predict()
+            
+        if not useSavedModels or not os.path.isfile(SavePath+"sarimax_mlp_vr_residual.pckl"):            
             ag_mlp_vr_residual = AGMLP_VR_Residual(endo_var, y_sarimax_PSO_ACO,
                                                    num_epochs = numberGenerations,
                                                    size_pop = popsize, prob_mut=0.2,
@@ -281,6 +285,9 @@ class TimeSeriesTester():
         else:
             best_mlp_vr_residual = pickle.load(open(SavePath+"sarimax_vr_residual.pckl", 'rb'))
 
+        mape_pso_aco = MAPE(y_sarimax_PSO_ACO, endo_var)
+        print("Mape: {0}".format(mape_pso_aco))
+        
         best = best_mlp_vr_residual
         erro = endo_var - y_sarimax_PSO_ACO
         erro_train_entrada, _, erro_test_entrada, _ = train_test_split_noExog(erro, best[0], tr_ts_percents)
@@ -292,8 +299,7 @@ class TimeSeriesTester():
 
         return y_hat
 
-
-    def _saveResults(self, y_test, y_hats, labels, save_path, timestap_now, metricsThreshHold):
+    def _saveResults(self, y_test, y_hats, labels, save_path, timestap_now, metricsThreshHold, customMetric=None):
         logResults = ""
         logResults += "Scores" + "\n"
         print("Scores")
@@ -304,6 +310,16 @@ class TimeSeriesTester():
             logResults += "{0} ".format(plotlabel) + "- MAPE: %.4f" % MAPE(y_test, y_hat, metricsThreshHold) + "\n"
             logResults += "{0} ".format(plotlabel) + "- SMAPE: %.4f" % SMAPE(y_test, y_hat, metricsThreshHold) + "\n"
             logResults += "{0} ".format(plotlabel) + "- MSE: %.4f" % mean_squared_error(y_test, y_hat) + "\n"
+            if customMetric != None:
+                metric_name = list(customMetric.keys())[0]
+                metric_func = customMetric[metric_name]
+
+                print(y_test.shape)
+                print(y_hat.shape)
+                print(metric_func(y_test, y_hat))
+                
+                logResults += "{0} ".format(plotlabel) + "- {0}:".format(metric_name) + " %.4f" % metric_func(y_test, y_hat) + "\n"
+            
 
         with open(save_path+"/results_{0}.txt".format(timestap_now), "w") as text_file:
             text_file.write(logResults)
@@ -357,13 +373,13 @@ class TimeSeriesTester():
     def executeTests(self, y_data, exog_data=None, autoMlsToExecute="All", train_test_split=[80,20],
                      lags=24, useSavedModels=True, useSavedArrays=True, popsize=10, numberGenerations=5,
                      metricsThreshHold=0.1,
-                     save_path="./TimeSeriesTester/"):
+                     save_path="./TimeSeriesTester/", 
+                     customMetric=None):
 
-        # TODO modificar parametros de cada um dos automls
         """
             autoMlsToExecute="All"
 
-            or insert the automls in a list like autoMlsToExecute=["tpot", "hpsklearn", "autokeras", "agmmff", "acolstm", 
+            Or insert the automls in a list like autoMlsToExecute=["tpot", "hpsklearn", "autokeras", "agmmff", "acolstm", 
                 "acoclstm", "ets", "SARIMAXAGMLPEnsemble", "ETSAGMLPEnsemble"]
 
             popsize: is utilize in the evolutiary based algorithms
@@ -371,18 +387,19 @@ class TimeSeriesTester():
             numberGenerations: is utilize in the evolutiary based algorithms
 
             metricsThreshHold: applies to MAPE and SMAPE metrics
+
+            customMetric; inset a dict like {"metric name":metric_function}. metric_function should receive (y_test, y_hat) as arguments
         """
         if np.isnan(np.sum(y_data)):
-            raise("Gen still has nan")
-
-        for i in range(exog_data.shape[1]):
-            ex_var = exog_data[:,i]
-            if np.isnan(np.sum(ex_var)):
-                print("exog still has nan in column {0}".format(i))
-                raise ValueError("Exog has nan in column")
+            raise("Main data still has nan")
         
         if isinstance(exog_data,(list,pd.core.series.Series,np.ndarray)):
             X_train, y_train, X_test, y_test = train_test_split_with_Exog(y_data, exog_data, lags, train_test_split)
+            for i in range(exog_data.shape[1]):
+                ex_var = exog_data[:,i]
+                if np.isnan(np.sum(ex_var)):
+                    print("exog still has nan in column {0}".format(i))
+                    raise ValueError("Exog has nan in column")
         else:
             X_train, y_train, X_test, y_test = train_test_split_noExog(y_data, lags, train_test_split)
             
@@ -471,9 +488,10 @@ class TimeSeriesTester():
                 print("SARIMAXAGMLPEnsemble Evaluation...")
                 if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_sarimaxagmlpensemble"):
                     y_hat_sarimaxagmlpensemble = self._applySARIMAXAGMLPEnsemble(y_data, exog_data, SavePath=save_path,
-                                                                                tr_ts_percents=train_test_split,
-                                                                                popsize=popsize,
-                                                                                numberGenerations=numberGenerations)
+                                                                                tr_ts_percents = train_test_split,
+                                                                                popsize = popsize,
+                                                                                numberGenerations = numberGenerations,
+                                                                                useSavedModels = useSavedModels)
                     np.savetxt(save_path+"/y_hat_sarimaxagmlpensemble", y_hat_sarimaxagmlpensemble, delimiter=';')
                 else:
                     y_hat_sarimaxagmlpensemble = np.loadtxt(save_path+"/y_hat_sarimaxagmlpensemble", delimiter=';')
@@ -535,12 +553,13 @@ class TimeSeriesTester():
 
         if "ETSAGMLPEnsemble" in autoMlsToExecute or autoMlsToExecute=="All":
             try:
-                print("SARIMAXAGMLPEnsemble Evaluation...")
+                print("ETSAGMLPEnsemble Evaluation...")
                 if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_etsagmlpensemble"):
-                    y_hat_etsagmlpensemble = self._applyETSMLPEnsemble(y_data, SavePath=save_path,
-                                                                            tr_ts_percents=train_test_split,
-                                                                            popsize=popsize,
-                                                                            numberGenerations=numberGenerations)
+                    y_hat_etsagmlpensemble = self._applyETSMLPEnsemble(y_data, SavePath = save_path,
+                                                                            tr_ts_percents = train_test_split,
+                                                                            popsize = popsize,
+                                                                            numberGenerations = numberGenerations,
+                                                                            useSavedModels = useSavedModels)
                     np.savetxt(save_path+"/y_hat_etsagmlpensemble", y_hat_etsagmlpensemble, delimiter=';')
                 else:
                     y_hat_etsagmlpensemble = np.loadtxt(save_path+"/y_hat_etsagmlpensemble", delimiter=';')
@@ -568,4 +587,100 @@ class TimeSeriesTester():
                 traceback.print_exc()
                 pass
 
-        self._saveResults(y_test, y_hats, labels, save_path, timestamp_now, metricsThreshHold)
+        self._saveResults(y_test, y_hats, labels, save_path, timestamp_now, metricsThreshHold, customMetric)
+
+    def forecastAheadTest(self, y_data, K=12,  train_test_split=[80,20],
+                     lags=24,save_path="./TimeSeriesTester/", autoMlsToExecute="All"):
+        """
+            In case of forecast ahead, is impossible to make with enable exogenous variables.
+        """
+
+        if np.isnan(np.sum(y_data)):
+            raise("main data still has nan")
+            
+        y_hats = {}
+
+        # ##################################################################################################
+        # #################################### NO EXOG MODELS ##############################################    
+        # ##################################################################################################
+
+        X_train, y_train, X_test, y_test = train_test_split_noExog(y_data, lags, train_test_split)
+
+        # if "SARIMAXAGMLPEnsemble" in autoMlsToExecute or autoMlsToExecute=="All":
+        #     try:
+        #         print("SARIMAXAGMLPEnsemble Evaluation...")
+        #         y_sarimax_PSO_ACO = pickle.load(open(save_path+"sarimax_pso_aco",'rb'))
+        #         best_mlp_vr_residual = pickle.load(open(save_path+"sarimax_vr_residual.pckl", 'rb'))
+        #         y_hat_sarimaxmlp = AGMLP_VR_Residual(y_data, y_sarimax_PSO_ACO.predict()).forecastAhead(K, y_sarimax_PSO_ACO.forecast(K), bestObject=best_mlp_vr_residual)
+
+        #         y_hats["SARIMAXAGMLPEnsemble"]=y_hat_sarimaxmlp[-K:]
+        #     except Exception:
+        #         traceback.print_exc()
+        #         pass
+
+        if "ETSAGMLPEnsemble" in autoMlsToExecute or autoMlsToExecute=="All":
+            try:
+                print("ETSAGMLPEnsemble Evaluation...")
+                ets_model = pickle.load(open(save_path+"best_ets",'rb'))
+                best_mlp_vr_residual = pickle.load(open(save_path+"ets_vr_residual.pckl", 'rb'))
+                ets_insample = ets_model.fittedvalues
+                ets_outsample = ets_model.forecast(K)
+                ets_in_out_samples = np.concatenate((ets_insample, ets_outsample))
+                y_hat_etsmlp = AGMLP_VR_Residual(y_data, ets_insample).forecastAhead(K, ets_in_out_samples, bestObject=best_mlp_vr_residual)
+                y_hats["ETSAGMLPEnsemble"]=y_hat_etsmlp[-K:]
+                y_hats["ETS"]=ets_outsample
+            except Exception:
+                traceback.print_exc()
+                pass
+        
+        if "agmmff" in autoMlsToExecute or autoMlsToExecute=="All":
+            try:
+                print("AGMMFF Ahead...")
+                final_blender = pickle.load(open(save_path+"mmffModel_blender.pckl", 'rb'))
+                final_models = pickle.load(open(save_path+"mmffModel_models.pckl", 'rb'))
+                agMMGGBlending = AGMMFFBleding(X_train, y_train, X_test, y_test, verbose=self._verbose)
+                y_hat_agmmff_inicial = agMMGGBlending.predict(X=X_test, models=final_models, blender=final_blender)
+                y_hat_agmmf = y_hat_agmmff_inicial.copy()
+                for k in range(K):
+                    X_loop = y_hat_agmmf[-lags:]
+                    y_hat_agmmf = np.concatenate((y_hat_agmmf,
+                                                  agMMGGBlending.predict(X=X_loop.reshape(1, -1), blender=final_blender, models=final_models)))
+
+                y_hats["AGMMFF"]=y_hat_agmmf[-K:]
+            except Exception:
+                traceback.print_exc()
+                pass
+        
+        # X_train_noexog, y_train_noexog, X_test_noexog, y_test_noexog = train_test_split_noExog(y_data, 23,
+        #                                                                     tr_vd_ts_percents = [80, 20],
+        #                                                                     print_shapes = useSavedModels)
+        # options_ACO={'antNumber':popsize, 'antTours':numberGenerations, 'alpha':1, 'beta':1, 'rho':0.5, 'Q':1}
+
+        # if "acolstm" in autoMlsToExecute or autoMlsToExecute=="All":
+        #     try:
+        #         print("ACOLSTM Evaluation...")
+        #         Layers_Qtd=[[60, 40, 30], [20, 15], [10, 7, 5]]
+        #         epochs=[300]        
+        #         y_hat_acolstm = self._applyACOLSTM(X_train_noexog, y_train_noexog, X_test_noexog, y_test_noexog,
+        #                                     save_path+"/acolstmModel_{0}".format(timestamp_now),
+        #                                     Layers_Qtd, epochs, options_ACO, useSavedModels = useSavedModels)
+
+        #         y_hats.append(y_hat_acolstm)
+        #         labels.append("ACOLSTM")
+        #     except Exception:
+        #         traceback.print_exc()
+        #         pass
+
+        # if "ets" in autoMlsToExecute or autoMlsToExecute=="All":
+        #     try:
+        #         print("ETS Evaluation...")
+        #         y_hat_ETS = self._applyETS(y_train_noexog, y_test_noexog)
+
+        #         print("SHAPE HAT {0}".format(y_hat_ETS.shape))
+        #         y_hats.append(y_hat_ETS)
+        #         labels.append("ETS")
+        #     except Exception:
+        #         traceback.print_exc()
+        #         pass
+
+        return y_hats
