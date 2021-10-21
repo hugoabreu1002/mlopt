@@ -6,7 +6,7 @@ from sklearn.svm import SVR
 from sklearn.neural_network import MLPRegressor as MLP
 from .EnsembleSearch import EnsembleSearch
 
-class MMFFBleding:
+class MMFFBlending:
 
     def __init__(self,X_train, y_train, X_test, y_test, models=[('mlp', MLP()), ('rfr', RFR()), ('gbr', GBR()), ('svm', SVR())],
                  blender = DecisionTreeRegressor()):
@@ -81,7 +81,7 @@ class MMFFBleding:
         return yhat
 
 
-class AGMMFFBleding(MMFFBleding):
+class AGMMFFBleding(MMFFBlending):
 
     def __init__(self, X_train, y_train, X_test, y_test, blender = DecisionTreeRegressor(), epochs=5, size_pop=40, verbose=True):
         self._ensembleSearch = EnsembleSearch(X_train, y_train, X_test, y_test, epochs=epochs, size_pop=size_pop, verbose=verbose)
