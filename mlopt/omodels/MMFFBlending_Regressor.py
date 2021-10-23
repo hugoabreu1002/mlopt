@@ -81,12 +81,8 @@ class MMFFBlending:
 
         return yhat
 
-<<<<<<< HEAD:mlopt/omodels/MMFFBlending_Regressor.py
 
 class AGMMFFBleding(MMFFBlending):
-=======
-class AGMMFFBleding(MMFFBleding):
->>>>>>> db7e60123658e84b331e46a4891e1b8e6f070d7d:mlopt/omodels/MMFFBleding_Regressor.py
 
     def __init__(self, X_train, y_train, X_test, y_test,
                  blender = DecisionTreeRegressor(),
