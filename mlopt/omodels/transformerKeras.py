@@ -115,7 +115,7 @@ class TransformerKeras():
 
     def fitModel(self, time2vec_dim=1, num_heads=2, head_size=128, ff_dim=None,
                  num_layers=1, dropout=0, epochs=300,
-                 early_stop=True, verbose=True, lr_warmnup=True, patience=None):
+                 early_stop=True, verbose=True, lr_warmnup=True):
 
         Model = None
         K.clear_session()
@@ -137,12 +137,12 @@ class TransformerKeras():
         if np.isnan(np.sum(self._y_train)):
             raise("y train has nan")
 
-        # simple early stopping
-        if patience == None:
-            patience = 10
-
         if early_stop:
-            es = EarlyStopping(monitor='loss', mode='auto', patience=patience, verbose=1)
+            patience = 10
+        else:
+            patience=epochs
+
+        es = EarlyStopping(monitor='loss', mode='auto', patience=patience, verbose=1)
 
         my_callbacks = [es]
         if lr_warmnup:
