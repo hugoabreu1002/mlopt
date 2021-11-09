@@ -1,11 +1,12 @@
 from tensorflow import keras
 from tensorflow.python.keras.callbacks import EarlyStopping
-from tensorflow_addons.layers import MultiHeadAttention
+from tensorflow.keras.layers import MultiHeadAttention
 from tensorflow.keras.layers import Dense, Flatten
 from tensorflow.keras import backend as K
 from functools import partial
-
+import random
 import numpy as np
+from tqdm import tqdm
 
 class Time2Vec(keras.layers.Layer):
     def __init__(self, kernel_size=1):
@@ -81,7 +82,6 @@ class ModelTrunk(keras.Model):
 
         return x # flat vector of features out K.reshape(x, (-1, x.shape[1] * x.shape[2]))
 
-
 class TransformerKeras():
     """
         X_train: X_train for lstm.
@@ -102,7 +102,26 @@ class TransformerKeras():
         self._X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], n_variables))
         self._y_test = y_test
     
-    def lr_scheduler(self, epoch, lr, warmup_epochs=15, decay_epochs=100, initial_lr=1e-6, base_lr=1e-3, min_lr=5e-5):
+    def lr_scheduler(self, epoch, **lr_scheduler_kwargs):
+        """
+            base_lr must be greater than min_lr and initial_lr
+
+            warmup_epochs must be lesser than epoch
+            decay_epochs must be greater than wamup_epochs and lesser than epoch
+        """
+        if isinstance(lr_scheduler_kwargs, dict):
+            warmup_epochs=lr_scheduler_kwargs.get('warmup_epochs')
+            decay_epochs=lr_scheduler_kwargs.get('decay_epochs') 
+            initial_lr=lr_scheduler_kwargs.get('initial_lr')
+            base_lr=lr_scheduler_kwargs.get('base_lr')
+            min_lr=lr_scheduler_kwargs.get('min_lr')
+        else:
+            warmup_epochs=20
+            decay_epochs=150 
+            initial_lr=1e-6 
+            base_lr=1e-3
+            min_lr=5e-5
+        
         if epoch <= warmup_epochs:
             pct = epoch / warmup_epochs
             return ((base_lr - initial_lr) * pct) + initial_lr
@@ -115,7 +134,7 @@ class TransformerKeras():
 
     def fitModel(self, time2vec_dim=1, num_heads=2, head_size=128, ff_dim=None,
                  num_layers=1, dropout=0, epochs=300,
-                 early_stop=True, verbose=True, lr_warmnup=True):
+                 early_stop=True, verbose=True, lr_warmnup=True, **lr_scheduler_kwargs):
 
         Model = None
         K.clear_session()
@@ -125,6 +144,7 @@ class TransformerKeras():
                            denseSize=self._X_train.shape[1],
                            outputSize=self._y_train.shape[1],
                            dropout=dropout)
+
         Model.compile(optimizer='adam', loss='mae', metrics=['mse'])
         Model.build(self._X_train.shape)
         Model.summary()
@@ -146,8 +166,131 @@ class TransformerKeras():
 
         my_callbacks = [es]
         if lr_warmnup:
-            my_callbacks += [keras.callbacks.LearningRateScheduler(partial(self.lr_scheduler), verbose=0)]
+            my_callbacks += [keras.callbacks.LearningRateScheduler(self.lr_scheduler(epoch=epochs, **lr_scheduler_kwargs), verbose=0)]
 
-        Model.fit(self._X_train, self._y_train, epochs=epochs, shuffle=False, use_multiprocessing=True, callbacks=my_callbacks, verbose=verbose)
+        fithistory = Model.fit(self._X_train, self._y_train, epochs=epochs, shuffle=False, use_multiprocessing=True, callbacks=my_callbacks, verbose=verbose)
 
-        return Model
+        return Model, fithistory
+
+class AGTransformer():
+    def __init__(self,X_train, y_train, X_test, y_test, num_generations, size_population, prob_mut, epochs_per_individual=200):
+        self._X_train = X_train
+        self._y_train = y_train
+        self._X_test = X_test
+        self._y_test = y_test
+        self._epochs_per_individual = epochs_per_individual
+        self._num_generations = num_generations
+        self._size_population = size_population
+        self._prob_mut = prob_mut
+        self._fitness_array = np.array([])
+        self._best_of_all = None
+    
+    def gen_population(self):
+        """
+            Generates the population, which is a list of lists.
+            Every individual (list):
+
+            individual_template = [head_size, num_heads, num_layers, warmup_epochs, decay_epochs, Transformer_Object, Fitness]
+        """
+        sizepop=self._size_population
+        population = [['']]*sizepop
+
+        for i in range(0, sizepop):
+            population[i] = [random.randint(100,400), random.randint(1, 10),
+             random.randint(1, 5), 
+             random.randint(1, 30),
+             random.randint(100, 150),
+             'Transformer-object', 10]
+
+        return population
+
+    def set_fitness_and_sort(self, population, start_set_fit):
+        for i in range(start_set_fit, len(population)):
+            
+            lr_scheduler_kwargs = {'warmup_epochs':population[i][3],'decay_epochs':population[i][4],
+             'initial_lr':1e-6,
+              'base_lr':1e-3,
+              'min_lr':5e-5}
+
+            transformer_fitted, fitHistory = TransformerKeras(self._X_train, self._y_train, self._X_test, self._y_test).fitModel(head_size=population[i][0],
+            epochs=400,
+            num_heads=population[i][1],
+            num_layers=population[i][2],
+            early_stop=True,
+            **lr_scheduler_kwargs)
+
+            population[i][-1] = fitHistory.history['val_loss'][-1]
+            population[i][-2] = transformer_fitted
+        
+        population.sort(key = lambda x: x[:][-1])
+        
+        return population
+
+    def cruzamento(self, population):
+        qt_cross = len(population[0])
+        pop_ori = population
+        for p in range(1, len(pop_ori)):
+            if np.random.rand() > (1 - self._prob_mut):
+                population[p][0:int(qt_cross/2)] = pop_ori[int(p/2)][0:int(qt_cross/2)]
+                population[p][int(qt_cross/2):qt_cross] = pop_ori[int(p/2)][int(qt_cross/2):qt_cross]
+
+        return population
+
+    def mutation(self, population):
+        """
+            Also has the constraints.
+        """
+        for p in range(1, len(population)):
+            if np.random.rand() > (1 - self._prob_mut):
+                population[p][0] = population[p][0] + np.random.randint(-20,20)
+                if population[p][0] < 64:
+                    population[p][0] =  64
+
+                population[p][1] = population[p][1] + np.random.randint(-1,3)
+                if population[p][1] < 2:
+                    population[p][1] = 2
+                
+                population[p][2] = population[p][2] + np.random.randint(-1,2)
+                
+                if population[p][2] < 1:
+                    population[p][2] = 1
+                
+                population[p][3] = population[p][3] + np.random.randint(-5,20)
+
+                if population[p][3] < 10:
+                    population[p][3] = 10
+
+                population[p][4] = population[p][4] + np.random.randint(-10,10)
+
+                if population[p][4] < 50:
+                    population[p][4] = 50
+
+        return population
+    
+    def new_gen(self, population, num_gen):
+        population = self.cruzamento(population)
+        population = self.mutation(population)
+        start_set_fit = int(self._size_population*num_gen/(2*self._num_generations))
+        population = self.set_fitness_and_sort(population, start_set_fit)
+        return population
+    
+    def search_best_individual(self):
+        """
+            Returns best fitted transformer network
+        """
+        population = self.gen_population()
+        population = self.set_fitness_and_sort(population, 0)
+
+        self._fitness_array= np.append(self._fitness_array, population[0][-1])
+        self._best_of_all = population[0][-2]
+
+        for ng in tqdm(range(0, self._num_generations)):
+            population = self.new_gen(population, ng)
+            
+            if population[0][-1] < min(self._fitness_array):
+                self._best_of_all = population[0][-2]
+
+        self._final_trained_mlps = [p[-2] for p in population]
+        
+        return self._best_of_all 
+
