@@ -172,7 +172,7 @@ class TransformerKeras():
 
         return Model, fithistory
 
-class AGTransformer():
+class AGTransformerKeras():
     def __init__(self,X_train, y_train, X_test, y_test, num_generations, size_population, prob_mut, epochs_per_individual=200):
         self._X_train = X_train
         self._y_train = y_train
