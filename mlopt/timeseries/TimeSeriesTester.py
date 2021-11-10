@@ -10,12 +10,12 @@ import tpot
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from hpsklearn import HyperoptEstimator, any_regressor, any_preprocessing
 from hyperopt import tpe
-import autokeras as ak
+#import autokeras as ak
 import os
 import tensorflow as tf
 import numpy as np
 from ..omodels.ACOLSTM import ACOLSTM, ACOCLSTM
-from ..omodels.MMFFBleding_Regressor import AGMMFFBleding
+from ..omodels.MMFFBlending_Regressor import AGMMFFBlending
 import traceback
 import datetime
 from statsmodels.tsa.api import ExponentialSmoothing
@@ -76,33 +76,33 @@ class TimeSeriesTester():
         
         return y_hat
         
-    def _applyAutoKeras(self, X_train, y_train, X_test, y_test, SavePath,
-                    max_trials=100, epochs=300, useSavedModels = True):
+    # def _applyAutoKeras(self, X_train, y_train, X_test, y_test, SavePath,
+    #                 max_trials=100, epochs=300, useSavedModels = True):
 
-        if not useSavedModels or not os.path.isdir(SavePath+"/keras_auto_model/best_model/"):
-            input_node = ak.StructuredDataInput()
-            output_node = ak.DenseBlock()(input_node)
-            #output_node = ak.ConvBlock()(output_node)
-            output_node = ak.RegressionHead()(output_node)
-            AKRegressor = ak.AutoModel(
-                inputs=input_node,
-                outputs=output_node,
-                max_trials=max_trials,
-                overwrite=True,
-                tuner="bayesian",
-                project_name=SavePath+"/keras_auto_model"
-            )
-            print(" X_train shape: {0}\n y_train shape: {1}\n X_test shape: {2}\n y_test shape: {3}".format(X_train.shape, y_train.shape, X_test.shape, y_test.shape))
-            AKRegressor.fit(x=X_train, y=y_train[:,0],epochs=epochs,verbose=1, batch_size=int(X_train.shape[0]/10), shuffle=False, use_multiprocessing=True)
-            AKRegressor.export_model()
-        else:
-            AKRegressor = tf.keras.models.load_model(SavePath+"/keras_auto_model/best_model/")
+    #     if not useSavedModels or not os.path.isdir(SavePath+"/keras_auto_model/best_model/"):
+    #         input_node = ak.StructuredDataInput()
+    #         output_node = ak.DenseBlock()(input_node)
+    #         #output_node = ak.ConvBlock()(output_node)
+    #         output_node = ak.RegressionHead()(output_node)
+    #         AKRegressor = ak.AutoModel(
+    #             inputs=input_node,
+    #             outputs=output_node,
+    #             max_trials=max_trials,
+    #             overwrite=True,
+    #             tuner="bayesian",
+    #             project_name=SavePath+"/keras_auto_model"
+    #         )
+    #         print(" X_train shape: {0}\n y_train shape: {1}\n X_test shape: {2}\n y_test shape: {3}".format(X_train.shape, y_train.shape, X_test.shape, y_test.shape))
+    #         AKRegressor.fit(x=X_train, y=y_train[:,0],epochs=epochs,verbose=1, batch_size=int(X_train.shape[0]/10), shuffle=False, use_multiprocessing=True)
+    #         AKRegressor.export_model()
+    #     else:
+    #         AKRegressor = tf.keras.models.load_model(SavePath+"/keras_auto_model/best_model/")
             
-        y_hat = AKRegressor.predict(X_test)
-        print("AUTOKERAS - Score: ")
-        print("MAE: %.4f" % mean_absolute_error(y_test[:,0], y_hat))
+    #     y_hat = AKRegressor.predict(X_test)
+    #     print("AUTOKERAS - Score: ")
+    #     print("MAE: %.4f" % mean_absolute_error(y_test[:,0], y_hat))
             
-        return y_hat
+    #     return y_hat
 
     def _applyACOLSTM(self, X_train, y_train, X_test, y_test, SavePath,
                     Layers_Qtd=[[40, 50, 60, 70], [20, 25, 30], [5, 10, 15]],
@@ -157,7 +157,7 @@ class TimeSeriesTester():
     def _applyGAMMFF(self, X_train, y_train, X_test, y_test, SavePath,
                     epochs=5, size_pop=40, useSavedModels = True):
 
-        agMMGGBlending = AGMMFFBleding(X_train, y_train, X_test, y_test, epochs=epochs, size_pop=size_pop, verbose=self._verbose)
+        agMMGGBlending = AGMMFFBlending(X_train, y_train, X_test, y_test, epochs=epochs, size_pop=size_pop, verbose=self._verbose)
         if not useSavedModels or not (os.path.isfile(SavePath+"blender.pckl") and os.path.isfile(SavePath+"models.pckl")):
             final_models, final_blender = agMMGGBlending.train()
             y_hat = agMMGGBlending.predict(X=X_test, blender=final_blender, models=final_models)
@@ -379,7 +379,7 @@ class TimeSeriesTester():
         """
             autoMlsToExecute="All"
 
-            Or insert the automls in a list like autoMlsToExecute=["tpot", "hpsklearn", "autokeras", "agmmff", "acolstm", 
+            Or insert the automls in a list like autoMlsToExecute=["tpot", "hpsklearn", "agmmff", "acolstm", 
                 "acoclstm", "ets", "SARIMAXAGMLPEnsemble", "ETSAGMLPEnsemble"]
 
             popsize: is utilize in the evolutiary based algorithms
@@ -447,22 +447,22 @@ class TimeSeriesTester():
                 traceback.print_exc()
                 pass
 
-        if "autokeras" in autoMlsToExecute or autoMlsToExecute=="All":
-            try:
-                print("AUTOKERAS Evaluation...")
-                if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_AUTOKERAS"):
-                    y_hat_autokeras = self._applyAutoKeras(X_train, y_train, X_test, y_test,
-                                                          save_path+"/autokerastModel_{0}".format(timestamp_now),
-                                                          max_trials=10, epochs=300, useSavedModels = useSavedModels)
-                    np.savetxt(save_path+"/y_hat_AUTOKERAS", y_hat_autokeras, delimiter=';')
-                else:
-                    y_hat_autokeras = np.loadtxt(save_path+"/y_hat_AUTOKERAS", delimiter=';')
+        # if "autokeras" in autoMlsToExecute or autoMlsToExecute=="All":
+        #     try:
+        #         print("AUTOKERAS Evaluation...")
+        #         if not useSavedArrays or not os.path.isfile(save_path+"/y_hat_AUTOKERAS"):
+        #             y_hat_autokeras = self._applyAutoKeras(X_train, y_train, X_test, y_test,
+        #                                                   save_path+"/autokerastModel_{0}".format(timestamp_now),
+        #                                                   max_trials=10, epochs=300, useSavedModels = useSavedModels)
+        #             np.savetxt(save_path+"/y_hat_AUTOKERAS", y_hat_autokeras, delimiter=';')
+        #         else:
+        #             y_hat_autokeras = np.loadtxt(save_path+"/y_hat_AUTOKERAS", delimiter=';')
                     
-                y_hats.append(y_hat_autokeras)
-                labels.append("AUTOKERAS")
-            except Exception:
-                traceback.print_exc()
-                pass
+        #         y_hats.append(y_hat_autokeras)
+        #         labels.append("AUTOKERAS")
+        #     except Exception:
+        #         traceback.print_exc()
+        #         pass
 
         if "agmmff" in autoMlsToExecute or autoMlsToExecute=="All":
             try:
@@ -638,7 +638,7 @@ class TimeSeriesTester():
                 print("AGMMFF Ahead...")
                 final_blender = pickle.load(open(save_path+"mmffModel_blender.pckl", 'rb'))
                 final_models = pickle.load(open(save_path+"mmffModel_models.pckl", 'rb'))
-                agMMGGBlending = AGMMFFBleding(X_train, y_train, X_test, y_test, verbose=self._verbose)
+                agMMGGBlending = AGMMFFBlending(X_train, y_train, X_test, y_test, verbose=self._verbose)
                 y_hat_agmmff_inicial = agMMGGBlending.predict(X=X_test, models=final_models, blender=final_blender)
                 y_hat_agmmf = y_hat_agmmff_inicial.copy()
                 for k in range(K):

@@ -1,6 +1,6 @@
 from tensorflow import keras
 from tensorflow.python.keras.callbacks import EarlyStopping
-from tensorflow.keras.layers import MultiHeadAttention
+from tensorflow_addons.layers import MultiHeadAttention
 from tensorflow.keras.layers import Dense, Flatten
 from tensorflow.keras import backend as K
 from functools import partial
