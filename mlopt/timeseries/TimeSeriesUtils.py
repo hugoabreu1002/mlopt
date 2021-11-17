@@ -428,7 +428,7 @@ def sarimax_PSO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, verb
 
     return results.predict()
 
-def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options_ACO, verbose=False):
+def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options_ACO, low_memory=False, verbose=False):
     """
         Searchs SARIMAX PDQ parameters.
         
@@ -449,6 +449,7 @@ def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options
         options_ACO: parametrization for ACO algorithm. E.G.:
             {'antNumber':2, 'antTours':1, 'alpha':2, 'beta':2, 'rho':0.5, 'Q':2}
     """
+    
     def SARIMAX_AICc(X, *args):
         endo = args[0][0]
         exog = args[0][1]
@@ -462,7 +463,7 @@ def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options
                                     enforce_stationarity=False, enforce_invertibility=False)
         aicc = np.inf
         try:  
-            results = mod.fit(disp=False)
+            results = mod.fit(disp=False, low_memory=low_memory)
             aicc = results.aicc
         except:
             pass
@@ -494,7 +495,7 @@ def sarimax_ACO_PDQ_search(endo_var, exog_var_matrix, PDQS, searchSpace, options
 
     return results.aicc, best_result
 
-def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, options_ACO, exogColumnsNames=None, verbose=False):
+def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, options_ACO, exogColumnsNames=None, low_memory=False, verbose=False):
     """ 
         PCO - ACO Sariamx Search.
         It divides the tasks in two. PDQ Search is done by ACO. PDQS Search and Exogenous Variables searches is
@@ -515,6 +516,12 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
         
         options_ACO: parametrization for ACO algorithm. E.G.:
             {'antNumber':2, 'antTours':1, 'alpha':2, 'beta':2, 'rho':0.5, 'Q':2}
+
+        exogColumnsNames: Names of the exog columns to print the names.
+         
+        low_memory: low_memory paramater for statsmodels sarimax.
+         
+        verbose: verbose.
     """
 
     search_results = []
@@ -525,6 +532,7 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
         endo = kwargs['endo']
         exog = kwargs['exog']
         verbose = kwargs['verbose']
+        low_memory = kwargs['low_memory']
         options_ACO = Allkwargs['options_ACO']
         
         return_matrix = np.zeros(XX.shape[0])
@@ -540,7 +548,7 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
             logging.info("ACO Search will start with PDQS: {0} and Exogenous Columns {1}".format(pdqs, listPosb))
             aicc_result, pdq_param = sarimax_ACO_PDQ_search(endo_var=endo, exog_var_matrix=true_exog,
                                                PDQS=pdqs, searchSpace=searchSpaceACO,
-                                               options_ACO=options_ACO,  verbose=verbose)
+                                               options_ACO=options_ACO, low_memory=low_memory, verbose=verbose)
             
             search_results.append((aicc_result, pdq_param, pdqs, exogenous_int_pos))
             
@@ -574,12 +582,16 @@ def sarimax_PSO_ACO_search(endo_var, exog_var_matrix, searchSpace, options_PSO, 
 
     # Perform optimization
     searchSpaceACO = searchSpace[:3]
-    AllKwargs = {'kwargs': {'searchSpaceACO':searchSpaceACO, 'endo':endo_var, 'exog':exog_var_matrix,'verbose':verbose, 'S_parameter_posb':S_parameter_posb},
-                 'options_ACO':options_ACO}
+    AllKwargs = {'kwargs': {'searchSpaceACO':searchSpaceACO,
+     'endo':endo_var,
+     'exog':exog_var_matrix,'verbose':verbose,
+     'S_parameter_posb':S_parameter_posb,
+     'low_memory':low_memory},
+     'options_ACO':options_ACO}
     
     optimizer.optimize(sarimax_ACO_PDQ_search_AICC, iters=options_PSO['n_iterations'],verbose=verbose, **AllKwargs)
     
-    global_best_result = sorted(search_results, key=lambda x: x[0])[-1]
+    global_best_result = sorted(search_results, key=lambda x: x[0])[0]
     
     param = global_best_result[1]
     param_seasonal = global_best_result[2]
