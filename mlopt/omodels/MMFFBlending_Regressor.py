@@ -82,7 +82,7 @@ class MMFFBlending:
         return yhat
 
 
-class AGMMFFBleding(MMFFBlending):
+class AGMMFFBlending(MMFFBlending):
 
     def __init__(self, X_train, y_train, X_test, y_test,
                  blender = DecisionTreeRegressor(),
